@@ -19,6 +19,7 @@ def smoothData(rawData, smooth):
 parser = argparse.ArgumentParser(description='Display learning curves from the given file(s).')
 
 parser.add_argument('files', metavar='file', nargs='+', help='file containing the score for each episode in a column.')
+parser.add_argument('-i', '--ignoreheadings', action='store_true', default=False, help='ignore the first line of the input file.')
 parser.add_argument('-c', '--column', type=int, default=1, help='the column in the files that contains the learning data (default: %(default)s).')
 parser.add_argument('-s', '--smooth', type=int, default=1, help='the size of the smoothing window (default: %(default)s, which is no smoothing).')
 parser.add_argument('-a', '--avg', action='store_true', default=False, help='display the average curve of the given files (rather than each curve individually). Episodes not contained in all files will be displayed in red.')
@@ -49,6 +50,8 @@ for filename in args.files:
     try:
         fin = open(filename, 'r')
         print(str(len(data)) + ": " + filename)
+        if args.ignoreheadings:
+            fin.readline();
         for line in fin:
             score = float(line.split()[column])
             if stepCol >= 0:
@@ -96,7 +99,7 @@ else:
             xCoords = range(len(rawData))
             if stepCol >= 0:
                 xCoords = steps[i]
-            plot.plot(xCoords, rawData, color='0.75', label='Raw data')
+            plot.plot(xCoords, rawData, color='0.75', label='Raw')
 
     ax = plot.axes()
     ax.set_prop_cycle('color', [plot.cm.jet(i) for i in np.linspace(0.1, 0.9, len(data))])
@@ -122,5 +125,6 @@ if args.ylim != None:
     plot.ylim(ymin=args.ylim[0], ymax=args.ylim[1])
 if args.xlim != None:
     plot.xlim(xmin=args.xlim[0], xmax=args.xlim[1])
+plot.tight_layout()
 plot.draw()
 input("<press enter>")
