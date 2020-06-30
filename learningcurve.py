@@ -21,16 +21,16 @@ parser = argparse.ArgumentParser(description='Display learning curves from the g
 
 parser.add_argument('files', metavar='file', nargs='+', help='file containing the score for each episode in a column.')
 parser.add_argument('-i', '--ignoreheadings', action='store_true', default=False, help='ignore the first line of the input file.')
-parser.add_argument('-c', '--column', type=int, default=[1], nargs='+', help='the column in the files that contains the learning data (default: %(default)s).')
+parser.add_argument('-c', '--column', type=int, default=[1], nargs='+', help='Sets the columns in the files that contain data to be plotted. Multiple provided columns will yield subplots, one for each column (default: 1).')
 parser.add_argument('-s', '--smooth', type=int, default=1, help='the size of the smoothing window (default: %(default)s, which is no smoothing).')
 parser.add_argument('-a', '--avg', action='store_true', default=False, help='display the average curve of the given files (rather than each curve individually). Episodes not contained in all files will be displayed in red.')
 parser.add_argument('-r', '--raw', action='store_true', default=False, help='display the raw data as well as the smoothed data.')
 parser.add_argument('-t', '--timesteps', metavar='COLUMN', type=int, default=0, help='uses the number of steps from the supplied column to display learning versus number of steps rather than number of episodes (has no effect when combined with -a).')
-parser.add_argument('-d', '--denominators', type=int, default=[], nargs='+', help='values in data column will be divided by values in this column.')
-parser.add_argument('-l', '--title', metavar='TITLE', type=str, default=[], nargs='+', help='The title to display for this graph.')
-parser.add_argument('-u', '--units', type=str, default=[], nargs='+', help='This string will label the y-axis (default: Score").')
-parser.add_argument('-y', '--ylim', type=float, default = [], nargs='+', help='Fixes the limits of the y-axis', metavar=('MIN', 'MAX'))
-parser.add_argument('-x', '--xlim', type=float, default = [], nargs='+', help='Fixes the limits of the x-axis', metavar=('MIN', 'MAX'))
+parser.add_argument('-d', '--denoms', type=int, default=[], nargs='+', help='Values in data column will be divided by values in this column. Multiple values will be matched with corresponding data columns (give 0 to indicate no denominator).')
+parser.add_argument('-l', '--title', metavar='TITLE', type=str, default=[], nargs='+', help='The titles to display for the subplots (default title is blank).')
+parser.add_argument('-u', '--units', type=str, default=[], nargs='+', help='These strings will label the y-axes of the subplots (default label is Score").')
+parser.add_argument('-y', '--ylim', type=float, default = [], nargs='+', help='Sets the limits of the y-axes. Set MIN = MAX to use default axis limits.', metavar=('MIN MAX'))
+parser.add_argument('-x', '--xlim', type=float, default = [], nargs='+', help='Sets the limits of the x-axes. Set MIN = MAX to use default axis limits.', metavar=('MIN MAX'))
 
 args = parser.parse_args()
 
@@ -62,8 +62,8 @@ for c in range(numCols):
     smooth = args.smooth - 1
 
     denomCol = 0
-    if len(args.denominators) > c:
-        denomCol = args.denominators[c] - 1
+    if len(args.denoms) > c:
+        denomCol = args.denoms[c] - 1
 
     title = ""
     if len(args.title) > c:
@@ -75,9 +75,9 @@ for c in range(numCols):
 
     xlim = None
     ylim = None
-    if args.xlim != None and len(args.xlim) > 2*c:
+    if args.xlim != None and len(args.xlim) > 2*c and args.xlim[2*c] != args.xlim[2*c+1]:
         xlim = [args.xlim[2*c], args.xlim[2*c+1]]
-    if args.ylim != None and len(args.ylim) > 2*c:
+    if args.ylim != None and len(args.ylim) > 2*c and args.ylim[2*c] != args.ylim[2*c+1]:
         ylim = [args.ylim[2*c], args.ylim[2*c+1]]        
 
     data = []
@@ -171,11 +171,11 @@ for c in range(numCols):
         axes[axesR][axesC].set_xlabel("Episode")
     axes[axesR][axesC].set_ylabel(units)
     axes[axesR][axesC].set_title(title)
-    axes[axesR][axesC].legend(bbox_to_anchor=(1, 1), loc=2, borderaxespad=0.0)
     if ylim != None:
         axes[axesR][axesC].ylim(ymin=ylim[0], ymax=ylim[1])
     if xlim != None:
         axes[axesR][axesC].xlim(xmin=xlim[0], xmax=xlim[1])
+axes[0][numPlotCols - 1].legend(bbox_to_anchor=(1, 1), loc=2, borderaxespad=0.0)
 plot.tight_layout()
 plot.draw()
 input("<press enter>")
