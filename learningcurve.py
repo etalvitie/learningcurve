@@ -25,15 +25,17 @@ parser.add_argument('-s', '--smooth', type=int, default=1, help='the size of the
 parser.add_argument('-a', '--avg', action='store_true', default=False, help='display the average curve of the given files (rather than each curve individually). Episodes not contained in all files will be displayed in red.')
 parser.add_argument('-r', '--raw', action='store_true', default=False, help='display the raw data as well as the smoothed data.')
 parser.add_argument('-t', '--timesteps', metavar='COLUMN', type=int, default=0, help='uses the number of steps from the supplied column to display learning versus number of steps rather than number of episodes (has no effect when combined with -a).')
+parser.add_argument('-d', '--denominators', type=int, default=0, help='values in data column will be divided by values in this column.')
 parser.add_argument('-l', '--title', metavar='TITLE', type=str, default='', help='The title to display for this graph.')
+parser.add_argument('-u', '--units', type=str, default='Score', help='This string will label the y-axis (default: Score").')
 parser.add_argument('-y', '--ylim', nargs=2, type=float, help='Fixes the limits of the y-axis', metavar=('MIN', 'MAX'))
 parser.add_argument('-x', '--xlim', nargs=2, type=float, help='Fixes the limits of the x-axis', metavar=('MIN', 'MAX'))
-
 args = parser.parse_args()
 
 column = args.column - 1
 smooth = args.smooth - 1
 stepCol = args.timesteps - 1
+denomCol = args.denominators - 1
 
 plot.ion();
 
@@ -49,11 +51,20 @@ for filename in args.files:
 
     try:
         fin = open(filename, 'r')
-        print(str(len(data)) + ": " + filename)
         if args.ignoreheadings:
-            fin.readline();
+            headings = fin.readline().split();
+            if args.denominators > 0:
+                print("Heading: " + headings[column] + "/" + headings[args.denominators])
+            else:
+                print("Heading: " + headings[column])
+        print(str(len(data)) + ": " + filename)
         for line in fin:
-            score = float(line.split()[column])
+            denom = 1
+            if denomCol > 0:
+                denom = float(line.split()[args.denominators])
+                if denom == 0:
+                    denom = 1
+            score = float(line.split()[column])/denom
             if stepCol >= 0:
                 step = int(line.split()[stepCol])
                 curStep += step
@@ -118,7 +129,7 @@ if stepCol >= 0:
     plot.xlabel("Timestep")
 else:
     plot.xlabel("Episode")
-plot.ylabel("Score")
+plot.ylabel(args.units)
 plot.title(args.title)
 plot.legend(bbox_to_anchor=(1, 1), loc=2, borderaxespad=0.0)
 if args.ylim != None:
