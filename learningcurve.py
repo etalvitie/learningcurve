@@ -138,13 +138,13 @@ for c in range(numCols):
             avgData.append(total/count)
 
         if args.raw:
-            axes[axesR][axesC].plot(range(minLength), avgData[:minLength], color='0.75', label='Avg. data')
-            axes[axesR][axesC].plot(range(minLength, len(avgData)), avgData[minLength:], color='lightcoral')
+            axes[axesR][axesC].plot(range(minLength), avgData[:minLength], color='0.75', label='Avg.')
+            axes[axesR][axesC].plot(range(minLength, len(avgData)), avgData[minLength:], color='lightcoral', label='Raw')
 
         if minLength > smooth:
             smoothed = smoothData(avgData, smooth)
-            axes[axesR][axesC].plot(range(smooth, minLength), smoothed[:minLength-smooth], color='black')
-            axes[axesR][axesC].plot(range(minLength, len(avgData)), smoothed[minLength-smooth:], color='red')
+            axes[axesR][axesC].plot(range(smooth, minLength), smoothed[:minLength-smooth], color='black', label='Avg. (' + str(len(data)) + ' tr.)')
+            axes[axesR][axesC].plot(range(minLength, len(avgData)), smoothed[minLength-smooth:], color='red', label='Avg. (< ' + str(len(data)) + ' tr.)')
     else:
         if args.raw:
             for i in range(len(data)):
@@ -165,7 +165,7 @@ for c in range(numCols):
                     xCoords = steps[i][smooth:]
                 axes[axesR][axesC].plot(xCoords, smoothed, label=str(i+1))
 
-    if stepCol >= 0:
+    if stepCol >= 0 and not args.avg:
         axes[axesR][axesC].set_xlabel("Timestep")
     else:
         axes[axesR][axesC].set_xlabel("Episode")
