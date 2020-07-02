@@ -23,7 +23,7 @@ parser.add_argument('files', metavar='file', nargs='+', help='file containing th
 parser.add_argument('-i', '--ignoreheadings', action='store_true', default=False, help='ignore the first line of the input file.')
 parser.add_argument('-c', '--column', type=int, default=[1], nargs='+', help='Sets the columns in the files that contain data to be plotted. Multiple provided columns will yield subplots, one for each column (default: 1).')
 parser.add_argument('-s', '--smooth', type=int, default=1, help='the size of the smoothing window (default: %(default)s, which is no smoothing).')
-parser.add_argument('-a', '--avg', action='store_true', default=False, help='display the average curve of the given files (rather than each curve individually). Episodes not contained in all files will be displayed in red.')
+parser.add_argument('-a', '--avg', default=None, type=int, nargs='*', metavar='NUM', help='display the average curve of the given files (rather than each curve individually). Episodes not contained in all files will be displayed in a lighter color. Arguments define groups of files to be averaged (so, -a 4 3 will separately average the first 4 files, the following 3 files, and the remainder of the files). When no arguments are provided all files will be averaged together.')
 parser.add_argument('-r', '--raw', action='store_true', default=False, help='display the raw data as well as the smoothed data.')
 parser.add_argument('-t', '--timesteps', metavar='COLUMN', type=int, default=0, help='uses the number of steps from the supplied column to display learning versus number of steps rather than number of episodes (has no effect when combined with -a).')
 parser.add_argument('-d', '--denoms', type=int, default=[], nargs='+', help='Values in data column will be divided by values in this column. Multiple values will be matched with corresponding data columns (give 0 to indicate no denominator).')
@@ -126,25 +126,54 @@ for c in range(numCols):
         sys.stderr.write("No data to graph!\n")
         exit(1)
 
-    if args.avg:
-        avgData = []
-        for i in range(maxLength):
-            total = 0
-            count = 0
-            for j in range(len(data)):
-                if i < len(data[j]):
-                    total += data[j][i]
-                    count += 1
-            avgData.append(total/count)
+    if args.avg != None:
+        if args.avg == []:
+            args.avg.append(len(data))
+        numDiv = len(args.avg)
+        if sum(args.avg) < len(data):
+            numDiv += 1
+        axes[axesR][axesC].set_prop_cycle('color', [plot.cm.jet(i) for i in np.linspace(0.1, 0.9, numDiv)])
+        fileIdx = 0
+        groupIdx = 0
+        while fileIdx < len(data):
+            if groupIdx < len(args.avg):
+                g = args.avg[groupIdx]
+            else:
+                g = len(data) - fileIdx
+            avgData = []
+            someData = True
+            i = 0
+            maxLength = len(data[fileIdx])            
+            minLength = len(data[fileIdx])
+            for f in range(fileIdx+1, fileIdx+g):
+                if len(data[f]) > maxLength:
+                    maxLength = len(data[f])
+                if len(data[f]) < minLength:
+                    minLength = len(data[f])
+            
+            for i in range(maxLength):
+                total = 0
+                count = 0
+                for j in range(fileIdx, fileIdx+g):
+                    if i < len(data[j]):
+                        total += data[j][i]
+                        count += 1
+                avgData.append(total/count)
 
-        if args.raw:
-            axes[axesR][axesC].plot(range(minLength), avgData[:minLength], color='0.75', label='Avg.')
-            axes[axesR][axesC].plot(range(minLength, len(avgData)), avgData[minLength:], color='lightcoral', label='Raw')
+            if args.raw:
+                axes[axesR][axesC].plot(range(minLength), avgData[:minLength], color='0.75', label='Raw Avg.')
+                axes[axesR][axesC].plot(range(minLength, len(avgData)), avgData[minLength:], color='0.85', label='Raw Inc.')
 
-        if minLength > smooth:
-            smoothed = smoothData(avgData, smooth)
-            axes[axesR][axesC].plot(range(smooth, minLength), smoothed[:minLength-smooth], color='black', label='Avg. (' + str(len(data)) + ' tr.)')
-            axes[axesR][axesC].plot(range(minLength, len(avgData)), smoothed[minLength-smooth:], color='red', label='Avg. (< ' + str(len(data)) + ' tr.)')
+            if minLength > smooth:
+                smoothed = smoothData(avgData, smooth)
+                p = axes[axesR][axesC].plot(range(smooth, minLength), smoothed[:minLength-smooth], label='Avg. (' + str(fileIdx) + '-' + str(fileIdx+g) + ')')
+                color = p[0].get_color()
+                lighter = (color[0], color[1], color[2], 0.25)
+                axes[axesR][axesC].plot(range(minLength, len(avgData)), smoothed[minLength-smooth:], color=lighter, label='Inc. (' + str(fileIdx) + '-' + str(fileIdx+g) + ')')
+
+            fileIdx += g
+            groupIdx += 1
+
     else:
         if args.raw:
             for i in range(len(data)):
