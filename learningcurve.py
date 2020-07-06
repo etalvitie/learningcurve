@@ -51,7 +51,7 @@ else:
 plot.ion();
 
 print(numCols, numPlotRows, numPlotCols)
-fig, axes = plot.subplots(nrows=numPlotRows, ncols=numPlotCols)
+fig, axes = plot.subplots(nrows=numPlotRows, ncols=numPlotCols, squeeze=False)
 
 for c in range(numCols):
     axesR = c//numPlotCols
@@ -174,7 +174,7 @@ for c in range(numCols):
             fileIdx += g
             groupIdx += 1
 
-    else:
+    else: #args.avg == None
         if args.raw:
             for i in range(len(data)):
                 rawData = data[i]
