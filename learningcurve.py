@@ -201,9 +201,9 @@ for c in range(numCols):
     axes[axesR][axesC].set_ylabel(units)
     axes[axesR][axesC].set_title(title)
     if ylim != None:
-        axes[axesR][axesC].ylim(ymin=ylim[0], ymax=ylim[1])
+        axes[axesR][axesC].set_ylim(ymin=ylim[0], ymax=ylim[1])
     if xlim != None:
-        axes[axesR][axesC].xlim(xmin=xlim[0], xmax=xlim[1])
+        axes[axesR][axesC].set_xlim(xmin=xlim[0], xmax=xlim[1])
 axes[0][numPlotCols - 1].legend(bbox_to_anchor=(1, 1), loc=2, borderaxespad=0.0)
 plot.tight_layout()
 plot.draw()
