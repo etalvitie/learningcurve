@@ -75,10 +75,16 @@ for c in range(numCols):
 
     xlim = None
     ylim = None
-    if args.xlim != None and len(args.xlim) > 2*c and args.xlim[2*c] != args.xlim[2*c+1]:
-        xlim = [args.xlim[2*c], args.xlim[2*c+1]]
-    if args.ylim != None and len(args.ylim) > 2*c and args.ylim[2*c] != args.ylim[2*c+1]:
-        ylim = [args.ylim[2*c], args.ylim[2*c+1]]        
+    if args.xlim != []:
+        if len(args.xlim) > 2*c and args.xlim[2*c] != args.xlim[2*c+1]:
+            xlim = [args.xlim[2*c], args.xlim[2*c+1]]
+        else:
+            xlim = [args.xlim[-2], args.xlim[-1]]
+    if args.ylim != []:
+        if len(args.ylim) > 2*c and args.ylim[2*c] != args.ylim[2*c+1]:
+            ylim = [args.ylim[2*c], args.ylim[2*c+1]]
+        else:
+            ylim = [args.ylim[-2], args.ylim[-1]]
 
     data = []
     steps = []
@@ -98,6 +104,8 @@ for c in range(numCols):
                 heading = headings[column]
                 if denomCol > 0:
                     heading += "/" + headings[denomCol]
+                if len(args.units) <= c:
+                    units = heading
             print(str(len(data)) + ": " + filename + " -- " + heading)
             for line in fin:
                 denom = 1
