@@ -172,10 +172,10 @@ for c in range(numCols):
 
             if minLength > smooth:
                 smoothed = smoothData(avgData, smooth)
-                p = axes[axesR][axesC].plot(range(smooth, minLength), smoothed[:minLength-smooth], label='Avg. (' + str(fileIdx) + '-' + str(fileIdx+g) + ')')
+                p = axes[axesR][axesC].plot(range(smooth, minLength), smoothed[:minLength-smooth], label='Avg. (' + str(fileIdx) + '-' + str(fileIdx+g-1) + ')')
                 color = p[0].get_color()
                 lighter = (color[0], color[1], color[2], 0.25)
-                axes[axesR][axesC].plot(range(minLength, len(avgData)), smoothed[minLength-smooth:], color=lighter, label='Inc. (' + str(fileIdx) + '-' + str(fileIdx+g) + ')')
+                axes[axesR][axesC].plot(range(minLength, len(avgData)), smoothed[minLength-smooth:], color=lighter, label='Inc. (' + str(fileIdx) + '-' + str(fileIdx+g-1) + ')')
 
             fileIdx += g
             groupIdx += 1
