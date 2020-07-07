@@ -48,8 +48,6 @@ else:
     numPlotRows = 1
     numPlotCols = 1
 
-plot.ion();
-
 print(numCols, numPlotRows, numPlotCols)
 fig, axes = plot.subplots(nrows=numPlotRows, ncols=numPlotCols, squeeze=False)
 
@@ -213,6 +211,8 @@ for c in range(numCols):
     if xlim != None:
         axes[axesR][axesC].set_xlim(xmin=xlim[0], xmax=xlim[1])
 axes[0][numPlotCols - 1].legend(bbox_to_anchor=(1, 1), loc=2, borderaxespad=0.0)
+cfm = plot.get_current_fig_manager()
+cfm.resize(*cfm.window.maxsize())
 plot.tight_layout()
-plot.draw()
-input("<press enter>")
+fig.set_tight_layout(True)
+plot.show()
