@@ -210,9 +210,11 @@ for c in range(numCols):
         axes[axesR][axesC].set_ylim(ymin=ylim[0], ymax=ylim[1])
     if xlim != None:
         axes[axesR][axesC].set_xlim(xmin=xlim[0], xmax=xlim[1])
-axes[0][numPlotCols - 1].legend(bbox_to_anchor=(1, 1), loc=2, borderaxespad=0.0)
+
+handles, labels = axes[0][0].get_legend_handles_labels()
+legend = fig.legend(handles, labels, loc='upper right')
+bbox = legend.get_window_extent(fig.canvas.get_renderer()).transformed(fig.transFigure.inverted())
 cfm = plot.get_current_fig_manager()
 cfm.resize(*cfm.window.maxsize())
-plot.tight_layout()
-fig.set_tight_layout(True)
+fig.set_tight_layout({"rect":(0, 0, (bbox.x0+bbox.x1)/2, 1), "h_pad":0.3, "w_pad":0.3})
 plot.show()
