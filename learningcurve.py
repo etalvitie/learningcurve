@@ -156,26 +156,65 @@ for c in range(numCols):
                     maxLength = len(data[f])
                 if len(data[f]) < minLength:
                     minLength = len(data[f])
-            
-            for i in range(maxLength):
-                total = 0
-                count = 0
-                for j in range(fileIdx, fileIdx+g):
-                    if i < len(data[j]):
-                        total += data[j][i]
-                        count += 1
-                avgData.append(total/count)
 
-            if args.raw:
-                axes[axesR][axesC].plot(range(minLength), avgData[:minLength], color='0.75', label='Raw Avg.')
-                axes[axesR][axesC].plot(range(minLength, len(avgData)), avgData[minLength:], color='0.85', label='Raw Inc.')
+            if stepCol == 0:
+                for i in range(maxLength):
+                    total = 0
+                    count = 0
+                    for j in range(fileIdx, fileIdx+g):
+                        if i < len(data[j]):
+                            total += data[j][i]
+                            count += 1
+                    avgData.append(total/count)
 
-            if minLength > smooth:
-                smoothed = smoothData(avgData, smooth)
-                p = axes[axesR][axesC].plot(range(smooth, minLength), smoothed[:minLength-smooth], label='Avg. (' + str(fileIdx) + '-' + str(fileIdx+g-1) + ')')
+                if args.raw:
+                    axes[axesR][axesC].plot(range(minLength), avgData[:minLength], color='0.75', label='Raw Avg.')
+                    axes[axesR][axesC].plot(range(minLength, len(avgData)), avgData[minLength:], color='0.85', label='Raw Inc.')
+
+                if minLength > smooth:
+                    smoothed = smoothData(avgData, smooth)
+                    p = axes[axesR][axesC].plot(range(smooth, minLength), smoothed[:minLength-smooth], label='Avg. (' + str(fileIdx) + '-' + str(fileIdx+g-1) + ')')
+                    color = p[0].get_color()
+                    lighter = (color[0], color[1], color[2], 0.25)
+                    axes[axesR][axesC].plot(range(minLength, len(avgData)), smoothed[minLength-smooth:], color=lighter, label='Inc. (' + str(fileIdx) + '-' + str(fileIdx+g-1) + ')')
+            else: #args.stepCol != 0
+                smoothed = []
+                xCoords = []
+                rawData = []
+                for i in range(fileIdx, fileIdx+g):
+                    if len(data[i]) > smooth:
+                        smoothed.append(smoothData(data[i], smooth))
+                        xCoords.append(steps[i][smooth:])
+                    else:
+                        smoothed.append([])
+                        xCoords.append([])
+
+                combinedXCoords = []
+                avgData = []
+                indices = [0]*len(smoothed)
+                numComplete = 0
+                remainingIndices = [i for i in range(len(indices)) if indices[i] < len(smoothed[i])]
+                while len(remainingIndices) > 0: #While some samples have more data
+                    curX = [xCoords[i][indices[i]] for i in remainingIndices]
+                    curY = [smoothed[i][indices[i]] for i in remainingIndices]
+                    minX = min(curX)
+                    combinedXCoords.append(minX)
+                    avgData.append(sum(curY)/len(curY))
+                    if len(remainingIndices) == len(indices):
+                        numComplete += 1
+                    minXIndices = [i for i in range(len(curX)) if curX[i] == minX]
+                    for idx in minXIndices:
+                        indices[remainingIndices[idx]] += 1
+                    remainingIndices = [i for i in range(len(indices)) if indices[i] < len(smoothed[i])]
+                
+                p = axes[axesR][axesC].plot(combinedXCoords[:numComplete], avgData[:numComplete], label='Avg. (' + str(fileIdx) + '-' + str(fileIdx+g) + ')')
                 color = p[0].get_color()
                 lighter = (color[0], color[1], color[2], 0.25)
-                axes[axesR][axesC].plot(range(minLength, len(avgData)), smoothed[minLength-smooth:], color=lighter, label='Inc. (' + str(fileIdx) + '-' + str(fileIdx+g-1) + ')')
+                axes[axesR][axesC].plot(combinedXCoords[numComplete:], avgData[numComplete:], color=lighter, label='Inc. (' + str(fileIdx) + '-' + str(fileIdx+g-1) + ')')
+
+                incompleteXCoords = []
+                incompleteAvg = []
+                    
 
             fileIdx += g
             groupIdx += 1
@@ -200,7 +239,7 @@ for c in range(numCols):
                     xCoords = steps[i][smooth:]
                 axes[axesR][axesC].plot(xCoords, smoothed, label=str(i+1))
 
-    if stepCol >= 0 and not args.avg:
+    if stepCol >= 0:
         axes[axesR][axesC].set_xlabel("Timestep")
     else:
         axes[axesR][axesC].set_xlabel("Episode")
