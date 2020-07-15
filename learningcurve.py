@@ -19,11 +19,12 @@ def smoothData(rawData, smooth):
 
 parser = argparse.ArgumentParser(description='Display learning curves from the given file(s).')
 
-parser.add_argument('files', metavar='file', nargs='+', help='file containing the score for each episode in a column.')
+parser.add_argument('files', metavar='FILE', nargs='*', help='file containing the score for each episode in a column.')
 parser.add_argument('-i', '--ignoreheadings', action='store_true', default=False, help='ignore the first line of the input file.')
 parser.add_argument('-c', '--column', type=int, default=[1], nargs='+', help='Sets the columns in the files that contain data to be plotted. Multiple provided columns will yield subplots, one for each column (default: 1).')
 parser.add_argument('-s', '--smooth', type=int, default=1, help='the size of the smoothing window (default: %(default)s, which is no smoothing).')
-parser.add_argument('-a', '--avg', default=None, type=int, nargs='*', metavar='NUM', help='display the average curve of the given files (rather than each curve individually). Episodes not contained in all files will be displayed in a lighter color. Arguments define groups of files to be averaged (so, -a 4 3 will separately average the first 4 files, the following 3 files, and the remainder of the files). When no arguments are provided all files will be averaged together.')
+#parser.add_argument('-a', '--avg', default=None, type=int, nargs='*', metavar='NUM', help='display the average curve of the given files (rather than each curve individually). Episodes not contained in all files will be displayed in a lighter color. Arguments define groups of files to be averaged (so, -a 4 3 will separately average the first 4 files, the following 3 files, and the remainder of the files). When no arguments are provided all files will be averaged together.')
+parser.add_argument('-a', '--avg', action='append', type=str, nargs='+', metavar='FILE', help='The provided files will be averaged together. This option can be used multiple times to create multiple groups to be averaged together.')
 parser.add_argument('-r', '--raw', action='store_true', default=False, help='display the raw data as well as the smoothed data.')
 parser.add_argument('-t', '--timesteps', metavar='COLUMN', type=int, default=0, help='uses the number of steps from the supplied column to display learning versus number of steps rather than number of episodes (has no effect when combined with -a).')
 parser.add_argument('-d', '--denoms', type=int, default=[], nargs='+', help='Values in data column will be divided by values in this column. Multiple values will be matched with corresponding data columns (give 0 to indicate no denominator).')
@@ -50,6 +51,17 @@ else:
 
 print(numCols, numPlotRows, numPlotCols)
 fig, axes = plot.subplots(nrows=numPlotRows, ncols=numPlotCols, squeeze=False)
+
+fileGroups = []
+for f in args.files:
+    fileGroups.append([f])
+
+for g in args.avg:
+    fileGroups.append(g)
+
+if len(fileGroups) == 0:
+    print("No files given!")
+    exit(1)
 
 for c in range(numCols):
     axesR = c//numPlotCols
@@ -84,177 +96,88 @@ for c in range(numCols):
         else:
             ylim = [args.ylim[-2], args.ylim[-1]]
 
-    data = []
-    steps = []
-    maxLength = 0
-    minLength = -1
-    nextGroup = len(args.files)+1
-    g = 0
-    if args.avg != None and len(args.avg) > 0:
-        nextGroup = args.avg[g]
-    for f in range(len(args.files)):
-        filename = args.files[f]
-        data.append([])
-        if stepCol >= 0:
-            steps.append([])
-            curStep = 0
+    fileIdx = 1
 
-        try:
-            fin = open(filename, 'r')
-            fileInfo = str(len(data)) + ": " + filename
-            if args.ignoreheadings:
-                headings = fin.readline().split();
-                heading = headings[column]
-                fileInfo += " -- " + heading
-                if denomCol > 0:
-                    fileInfo += "/" + headings[denomCol]
-                if len(args.units) <= c:
-                    units = heading
-            for line in fin:
-                denom = 1
-                if denomCol > 0:
-                    denom = float(line.split()[denomCol])
-                    if denom == 0:
-                        denom = 1
-                score = float(line.split()[column])/denom
-                if stepCol >= 0:
-                    step = int(line.split()[stepCol])
-                    curStep += step
-                    steps[-1].append(curStep)
-                data[-1].append(score)
-            fileInfo += " (" + str(len(data[-1])) + " eps"
+    axes[axesR][axesC].set_prop_cycle('color', [plot.cm.jet(i) for i in np.linspace(0.1, 0.9, len(fileGroups))])
+    
+    for group in fileGroups:
+        data = []
+        steps = []
+        for filename in group:            
+            data.append([])
             if stepCol >= 0:
-                fileInfo += ", " + str(steps[-1][-1]) + " frames"
-            fileInfo += ")"
-            print(fileInfo)
-            if f == nextGroup-1:
-                print("---")
-                g += 1
-                if g < len(args.avg):
-                    nextGroup += args.avg[g]
-                else:
-                    nextGroup = len(args.files)+1
-            fin.close()
-        except Exception as inst:
-            sys.stderr.write("Error reading " + filename + "\n")
-            sys.stderr.write(str(inst) + "\n")
+                steps.append([])
+                curStep = 0
 
-        if len(data[-1]) > maxLength:
-            maxLength = len(data[-1])
+            try:
+                fin = open(filename, 'r')
+                fileInfo = str(fileIdx) + ": " + filename
+                if args.ignoreheadings:
+                    headings = fin.readline().split();
+                    heading = headings[column]
+                    fileInfo += " -- " + heading
+                    if denomCol > 0:
+                        fileInfo += "/" + headings[denomCol]
+                    if len(args.units) <= c:
+                        units = heading
+                for line in fin:
+                    denom = 1
+                    if denomCol > 0:
+                        denom = float(line.split()[denomCol])
+                        if denom == 0:
+                            denom = 1
+                    score = float(line.split()[column])/denom
+                    if stepCol >= 0:
+                        step = int(line.split()[stepCol])
+                        curStep += step
+                        steps[-1].append(curStep)
+                    data[-1].append(score)
+                fileInfo += " (" + str(len(data[-1])) + " eps"
+                if stepCol >= 0:
+                    fileInfo += ", " + str(steps[-1][-1]) + " frames"
+                fileInfo += ")"
+                print(fileInfo)
+                fin.close()
+            except Exception as inst:
+                sys.stderr.write("Error reading " + filename + "\n")
+                sys.stderr.write(str(inst) + "\n")
 
-        if minLength < 0 or len(data[-1]) < minLength:
-            minLength = len(data[-1])
-
-    if maxLength == 0:
-        sys.stderr.write("No data to graph!\n")
-        exit(1)
-
-    if args.avg != None:
-        if args.avg == []:
-            args.avg.append(len(data))
-        numDiv = len(args.avg)
-        if sum(args.avg) < len(data):
-            numDiv += 1
-        axes[axesR][axesC].set_prop_cycle('color', [plot.cm.jet(i) for i in np.linspace(0.1, 0.9, numDiv)])
-        fileIdx = 0
-        groupIdx = 0
-        while fileIdx < len(data):
-            if groupIdx < len(args.avg):
-                g = args.avg[groupIdx]
-            else:
-                g = len(data) - fileIdx
-            avgData = []
-            someData = True
-            i = 0
-            maxLength = len(data[fileIdx])            
-            minLength = len(data[fileIdx])
-            for f in range(fileIdx+1, fileIdx+g):
-                if len(data[f]) > maxLength:
-                    maxLength = len(data[f])
-                if len(data[f]) < minLength:
-                    minLength = len(data[f])
-
-            if stepCol == 0:
-                for i in range(maxLength):
-                    total = 0
-                    count = 0
-                    for j in range(fileIdx, fileIdx+g):
-                        if i < len(data[j]):
-                            total += data[j][i]
-                            count += 1
-                    avgData.append(total/count)
-
-                if args.raw:
-                    axes[axesR][axesC].plot(range(minLength), avgData[:minLength], color='0.75', label='Raw Avg.')
-                    axes[axesR][axesC].plot(range(minLength, len(avgData)), avgData[minLength:], color='0.85', label='Raw Inc.')
-
-                if minLength > smooth:
-                    smoothed = smoothData(avgData, smooth)
-                    p = axes[axesR][axesC].plot(range(smooth, minLength), smoothed[:minLength-smooth], label='Avg. (' + str(fileIdx+1) + '-' + str(fileIdx+g) + ')')
-                    color = p[0].get_color()
-                    lighter = (color[0], color[1], color[2], 0.25)
-                    axes[axesR][axesC].plot(range(minLength, len(avgData)), smoothed[minLength-smooth:], color=lighter, label='Inc. (' + str(fileIdx+1) + '-' + str(fileIdx+g) + ')')
-            else: #args.stepCol != 0
-                smoothed = []
-                xCoords = []
-                rawData = []
-                for i in range(fileIdx, fileIdx+g):
-                    if len(data[i]) > smooth:
-                        smoothed.append(smoothData(data[i], smooth))
+            smoothed = []
+            xCoords = []
+            for i in range(len(data)):
+                if len(data[i]) > smooth:
+                    smoothed.append(smoothData(data[i], smooth))
+                    if stepCol > 0:
                         xCoords.append(steps[i][smooth:])
                     else:
-                        smoothed.append([])
-                        xCoords.append([])
+                        xCoords.append(list(range(smooth, len(data[i]))))
+                else:
+                    smoothed.append([])
+                    xCoords.append([])
 
-                combinedXCoords = []
-                avgData = []
-                indices = [0]*len(smoothed)
-                numComplete = 0
+            combinedXCoords = []
+            avgData = []
+            indices = [0]*len(smoothed)
+            numComplete = 0
+            remainingIndices = [i for i in range(len(indices)) if indices[i] < len(smoothed[i])]
+            while len(remainingIndices) > 0:
+                curX = [xCoords[i][indices[i]] for i in remainingIndices]                    
+                curY = [smoothed[i][indices[i]] for i in remainingIndices]
+                minX = min(curX)
+                combinedXCoords.append(minX)                    
+                avgData.append(sum(curY)/len(curY))
+                if len(remainingIndices) == len(group):
+                    numComplete += 1
+                minXIndices = [i for i in range(len(curX)) if curX[i] == minX]
+                for idx in minXIndices:
+                    indices[remainingIndices[idx]] += 1
                 remainingIndices = [i for i in range(len(indices)) if indices[i] < len(smoothed[i])]
-                while len(remainingIndices) > 0: #While some samples have more data
-                    curX = [xCoords[i][indices[i]] for i in remainingIndices]
-                    curY = [smoothed[i][indices[i]] for i in remainingIndices]
-                    minX = min(curX)
-                    combinedXCoords.append(minX)
-                    avgData.append(sum(curY)/len(curY))
-                    if len(remainingIndices) == len(indices):
-                        numComplete += 1
-                    minXIndices = [i for i in range(len(curX)) if curX[i] == minX]
-                    for idx in minXIndices:
-                        indices[remainingIndices[idx]] += 1
-                    remainingIndices = [i for i in range(len(indices)) if indices[i] < len(smoothed[i])]
-                
-                p = axes[axesR][axesC].plot(combinedXCoords[:numComplete], avgData[:numComplete], label='Avg. (' + str(fileIdx+1) + '-' + str(fileIdx+g) + ')')
-                color = p[0].get_color()
-                lighter = (color[0], color[1], color[2], 0.25)
-                axes[axesR][axesC].plot(combinedXCoords[numComplete:], avgData[numComplete:], color=lighter, label='Inc. (' + str(fileIdx+1) + '-' + str(fileIdx+g) + ')')
+            fileIdx += 1
 
-                incompleteXCoords = []
-                incompleteAvg = []
-                    
-
-            fileIdx += g
-            groupIdx += 1
-
-    else: #args.avg == None
-        if args.raw:
-            for i in range(len(data)):
-                rawData = data[i]
-                xCoords = range(len(rawData))
-                if stepCol >= 0:
-                    xCoords = steps[i]
-                axes[axesR][axesC].plot(xCoords, rawData, color='0.75', label='Raw')
-
-        axes[axesR][axesC].set_prop_cycle('color', [plot.cm.jet(i) for i in np.linspace(0.1, 0.9, len(data))])
-
-        for i in range(len(data)):
-            rawData = data[i]
-            if len(rawData) > smooth:
-                smoothed = smoothData(rawData, smooth)
-                xCoords = range(smooth, len(rawData))
-                if stepCol >= 0:
-                    xCoords = steps[i][smooth:]
-                axes[axesR][axesC].plot(xCoords, smoothed, label=str(i+1))
+        p = axes[axesR][axesC].plot(combinedXCoords[:numComplete], avgData[:numComplete], label='Avg. (' + str(fileIdx-len(group)) + '-' + str(fileIdx) + ')')
+        color = p[0].get_color()
+        lighter = (color[0], color[1], color[2], 0.25)
+        axes[axesR][axesC].plot(combinedXCoords[numComplete:], avgData[numComplete:], color=lighter, label='Inc. (' + str(fileIdx-len(group)) + '-' + str(fileIdx) + ')')
 
     if stepCol >= 0:
         axes[axesR][axesC].set_xlabel("Timestep")
