@@ -174,11 +174,12 @@ for c in range(numCols):
                 remainingIndices = [i for i in range(len(indices)) if indices[i] < len(smoothed[i])]
             fileIdx += 1
 
-        p = axes[axesR][axesC].plot(combinedXCoords[:numComplete], avgData[:numComplete], label='Avg. (' + str(fileIdx-len(group)) + '-' + str(fileIdx) + ')')
+        p = axes[axesR][axesC].plot(combinedXCoords[:numComplete], avgData[:numComplete], label='Avg. (' + str(fileIdx-len(group)) + '-' + str(fileIdx-1) + ')')
         color = p[0].get_color()
         lighter = (color[0], color[1], color[2], 0.25)
-        axes[axesR][axesC].plot(combinedXCoords[numComplete:], avgData[numComplete:], color=lighter, label='Inc. (' + str(fileIdx-len(group)) + '-' + str(fileIdx) + ')')
-
+        axes[axesR][axesC].plot(combinedXCoords[numComplete:], avgData[numComplete:], color=lighter, label='Inc. (' + str(fileIdx-len(group)) + '-' + str(fileIdx-1) + ')')
+        print('---')
+        
     if stepCol >= 0:
         axes[axesR][axesC].set_xlabel("Timestep")
     else:
