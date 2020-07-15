@@ -88,7 +88,12 @@ for c in range(numCols):
     steps = []
     maxLength = 0
     minLength = -1
-    for filename in args.files:
+    nextGroup = len(args.files)+1
+    g = 0
+    if args.avg != None and len(args.avg) > 0:
+        nextGroup = args.avg[g]
+    for f in range(len(args.files)):
+        filename = args.files[f]
         data.append([])
         if stepCol >= 0:
             steps.append([])
@@ -96,15 +101,15 @@ for c in range(numCols):
 
         try:
             fin = open(filename, 'r')
-            heading = ""
+            fileInfo = str(len(data)) + ": " + filename
             if args.ignoreheadings:
                 headings = fin.readline().split();
                 heading = headings[column]
+                fileInfo += " -- " + heading
                 if denomCol > 0:
-                    heading += "/" + headings[denomCol]
+                    fileInfo += "/" + headings[denomCol]
                 if len(args.units) <= c:
                     units = heading
-            print(str(len(data)) + ": " + filename + " -- " + heading)
             for line in fin:
                 denom = 1
                 if denomCol > 0:
@@ -117,6 +122,18 @@ for c in range(numCols):
                     curStep += step
                     steps[-1].append(curStep)
                 data[-1].append(score)
+            fileInfo += " (" + str(len(data[-1])) + " eps"
+            if stepCol >= 0:
+                fileInfo += ", " + str(steps[-1][-1]) + " frames"
+            fileInfo += ")"
+            print(fileInfo)
+            if f == nextGroup-1:
+                print("---")
+                g += 1
+                if g < len(args.avg):
+                    nextGroup += args.avg[g]
+                else:
+                    nextGroup = len(args.files)+1
             fin.close()
         except Exception as inst:
             sys.stderr.write("Error reading " + filename + "\n")
@@ -173,10 +190,10 @@ for c in range(numCols):
 
                 if minLength > smooth:
                     smoothed = smoothData(avgData, smooth)
-                    p = axes[axesR][axesC].plot(range(smooth, minLength), smoothed[:minLength-smooth], label='Avg. (' + str(fileIdx) + '-' + str(fileIdx+g-1) + ')')
+                    p = axes[axesR][axesC].plot(range(smooth, minLength), smoothed[:minLength-smooth], label='Avg. (' + str(fileIdx+1) + '-' + str(fileIdx+g) + ')')
                     color = p[0].get_color()
                     lighter = (color[0], color[1], color[2], 0.25)
-                    axes[axesR][axesC].plot(range(minLength, len(avgData)), smoothed[minLength-smooth:], color=lighter, label='Inc. (' + str(fileIdx) + '-' + str(fileIdx+g-1) + ')')
+                    axes[axesR][axesC].plot(range(minLength, len(avgData)), smoothed[minLength-smooth:], color=lighter, label='Inc. (' + str(fileIdx+1) + '-' + str(fileIdx+g) + ')')
             else: #args.stepCol != 0
                 smoothed = []
                 xCoords = []
@@ -207,10 +224,10 @@ for c in range(numCols):
                         indices[remainingIndices[idx]] += 1
                     remainingIndices = [i for i in range(len(indices)) if indices[i] < len(smoothed[i])]
                 
-                p = axes[axesR][axesC].plot(combinedXCoords[:numComplete], avgData[:numComplete], label='Avg. (' + str(fileIdx) + '-' + str(fileIdx+g) + ')')
+                p = axes[axesR][axesC].plot(combinedXCoords[:numComplete], avgData[:numComplete], label='Avg. (' + str(fileIdx+1) + '-' + str(fileIdx+g) + ')')
                 color = p[0].get_color()
                 lighter = (color[0], color[1], color[2], 0.25)
-                axes[axesR][axesC].plot(combinedXCoords[numComplete:], avgData[numComplete:], color=lighter, label='Inc. (' + str(fileIdx) + '-' + str(fileIdx+g-1) + ')')
+                axes[axesR][axesC].plot(combinedXCoords[numComplete:], avgData[numComplete:], color=lighter, label='Inc. (' + str(fileIdx+1) + '-' + str(fileIdx+g) + ')')
 
                 incompleteXCoords = []
                 incompleteAvg = []
