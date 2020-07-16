@@ -23,8 +23,8 @@ parser.add_argument('files', metavar='FILE', nargs='*', help='file containing th
 parser.add_argument('-i', '--ignoreheadings', action='store_true', default=False, help='ignore the first line of the input file.')
 parser.add_argument('-c', '--column', type=int, default=[1], nargs='+', help='Sets the columns in the files that contain data to be plotted. Multiple provided columns will yield subplots, one for each column (default: 1).')
 parser.add_argument('-s', '--smooth', type=int, default=1, help='the size of the smoothing window (default: %(default)s, which is no smoothing).')
-#parser.add_argument('-a', '--avg', default=None, type=int, nargs='*', metavar='NUM', help='display the average curve of the given files (rather than each curve individually). Episodes not contained in all files will be displayed in a lighter color. Arguments define groups of files to be averaged (so, -a 4 3 will separately average the first 4 files, the following 3 files, and the remainder of the files). When no arguments are provided all files will be averaged together.')
 parser.add_argument('-a', '--avg', action='append', type=str, nargs='+', metavar='FILE', help='The provided files will be averaged together. This option can be used multiple times to create multiple groups to be averaged together.')
+parser.add_argument('-e', '--error', action='store_true', default=False, help='display standard error of averages')
 parser.add_argument('-r', '--raw', action='store_true', default=False, help='display the raw data as well as the smoothed data.')
 parser.add_argument('-t', '--timesteps', metavar='COLUMN', type=int, default=0, help='uses the number of steps from the supplied column to display learning versus number of steps rather than number of episodes (has no effect when combined with -a).')
 parser.add_argument('-d', '--denoms', type=int, default=[], nargs='+', help='Values in data column will be divided by values in this column. Multiple values will be matched with corresponding data columns (give 0 to indicate no denominator).')
@@ -49,7 +49,6 @@ else:
     numPlotRows = 1
     numPlotCols = 1
 
-print(numCols, numPlotRows, numPlotCols)
 fig, axes = plot.subplots(nrows=numPlotRows, ncols=numPlotCols, squeeze=False)
 
 fileGroups = []
@@ -63,25 +62,82 @@ if len(fileGroups) == 0:
     print("No files given!")
     exit(1)
 
+data = []
+steps = []
+allUnits = []
+labels = []
+fileIdx = 1
+for group in fileGroups:
+    data.append([])
+    steps.append([])
+    if len(group) > 1:
+        labels.append('Avg. (' + str(fileIdx) + '-' + str(fileIdx+len(group)-1) + ')')
+    else:
+        labels.append('File ' + str(fileIdx))
+    for filename in group:        
+        data[-1].append([[] for i in range(numCols)])
+        if stepCol >= 0:
+            steps[-1].append([])
+            curStep = 0
+        try:
+            fin = open(filename, 'r')
+            fileInfo = str(fileIdx) + ": " + filename
+            if args.ignoreheadings:
+                allHeadings = fin.readline().split();
+                selectedHeadings = []
+                for c in range(numCols):
+                    column = args.column[c] - 1
+                    selectedHeadings.append(allHeadings[column])
+                    if len(args.denoms) > c:
+                        selectedHeadings[-1] += "/" + allHeadings[args.denoms[c]-1]
+                allUnits = selectedHeadings
+            else:
+                selectedUnits = []
+                for c in range(numCols):
+                    selectedUnits.append("Col " + str(args.column[c]))
+                    if len(args.denoms) > c:
+                        selectedUnits[-1] += " / Col " + str(args.denoms[c])
+                allUnits = selectedUnits
+
+            for line in fin:
+                for c in range(numCols):
+                    denom = 1
+                    if len(args.denoms) > c:
+                        denomCol = args.denoms[c] - 1
+                        denom = float(line.split()[denomCol])
+                    score = float(line.split()[args.column[c]-1])/denom
+                    data[-1][-1][c].append(score)
+                if stepCol >= 0:
+                    step = int(line.split()[stepCol])
+                    curStep += step
+                    steps[-1][-1].append(curStep)
+            fileInfo += " (" + str(len(steps[-1][-1])) + " eps"
+            if stepCol >= 0:
+                fileInfo += ", " + str(steps[-1][-1][-1]) + " frames"
+            fileInfo += ")"
+            print(fileInfo)
+            fin.close()
+        except Exception as inst:
+            sys.stderr.write("Error reading " + filename + "\n")
+            sys.stderr.write(str(inst) + "\n")
+        fileIdx += 1
+    print('---')
+            
 for c in range(numCols):
     axesR = c//numPlotCols
     axesC = c%numPlotCols
-    print("Plot " + str(axesR) + ", " + str(axesC))
     
-    column = args.column[c] - 1
     smooth = args.smooth - 1
-
-    denomCol = 0
-    if len(args.denoms) > c:
-        denomCol = args.denoms[c] - 1
 
     title = ""
     if len(args.title) > c:
         title = args.title[c]
 
-    units = "Score"
+    units = allUnits[c]
     if len(args.units) > c:
         units = args.units[c]
+
+    print("Plot " + str(axesR) + ", " + str(axesC) + ": " + units)
 
     xlim = None
     ylim = None
@@ -96,90 +152,63 @@ for c in range(numCols):
         else:
             ylim = [args.ylim[-2], args.ylim[-1]]
 
-    fileIdx = 1
-
     axes[axesR][axesC].set_prop_cycle('color', [plot.cm.jet(i) for i in np.linspace(0.1, 0.9, len(fileGroups))])
-    
-    for group in fileGroups:
-        data = []
-        steps = []
-        for filename in group:            
-            data.append([])
-            if stepCol >= 0:
-                steps.append([])
-                curStep = 0
 
-            try:
-                fin = open(filename, 'r')
-                fileInfo = str(fileIdx) + ": " + filename
-                if args.ignoreheadings:
-                    headings = fin.readline().split();
-                    heading = headings[column]
-                    fileInfo += " -- " + heading
-                    if denomCol > 0:
-                        fileInfo += "/" + headings[denomCol]
-                    if len(args.units) <= c:
-                        units = heading
-                for line in fin:
-                    denom = 1
-                    if denomCol > 0:
-                        denom = float(line.split()[denomCol])
-                        if denom == 0:
-                            denom = 1
-                    score = float(line.split()[column])/denom
-                    if stepCol >= 0:
-                        step = int(line.split()[stepCol])
-                        curStep += step
-                        steps[-1].append(curStep)
-                    data[-1].append(score)
-                fileInfo += " (" + str(len(data[-1])) + " eps"
-                if stepCol >= 0:
-                    fileInfo += ", " + str(steps[-1][-1]) + " frames"
-                fileInfo += ")"
-                print(fileInfo)
-                fin.close()
-            except Exception as inst:
-                sys.stderr.write("Error reading " + filename + "\n")
-                sys.stderr.write(str(inst) + "\n")
-
-            smoothed = []
-            xCoords = []
-            for i in range(len(data)):
-                if len(data[i]) > smooth:
-                    smoothed.append(smoothData(data[i], smooth))
-                    if stepCol > 0:
-                        xCoords.append(steps[i][smooth:])
-                    else:
-                        xCoords.append(list(range(smooth, len(data[i]))))
+    fileIdx = 0
+    for g in range(len(data)):
+        smoothed = []
+        xCoords = []
+        for i in range(len(data[g])):
+            if len(data[g][i][c]) > smooth:
+                smoothed.append(smoothData(data[g][i][c], smooth))
+                if stepCol > 0:
+                    xCoords.append(steps[g][i][smooth:])
                 else:
-                    smoothed.append([])
-                    xCoords.append([])
+                    xCoords.append(list(range(smooth, len(data[g][i][c]))))
+            else:
+                smoothed.append([])
+                xCoords.append([])
 
-            combinedXCoords = []
-            avgData = []
-            indices = [0]*len(smoothed)
-            numComplete = 0
+        combinedXCoords = []
+        avgData = []
+        upperErr = []
+        lowerErr = []
+        indices = [0]*len(smoothed)
+        numComplete = 0
+        remainingIndices = [i for i in range(len(indices)) if indices[i] < len(smoothed[i])]
+        while len(remainingIndices) > 0:
+            curX = [xCoords[i][indices[i]] for i in remainingIndices]                    
+            curY = [smoothed[i][indices[i]] for i in remainingIndices]
+            minX = min(curX)
+            combinedXCoords.append(minX)
+            sampleAvg = sum(curY)/len(curY)
+            avgData.append(sampleAvg)
+            sqErrs = [(y - sampleAvg)*(y - sampleAvg) for y in curY]
+            if len(curY) > 1:
+                stdDev = math.sqrt(sum(sqErrs)/(len(curY)-1))
+            else:
+                stdDev = 0
+            stdErr = stdDev/math.sqrt(len(curY))
+            upperErr.append(sampleAvg+stdErr)
+            lowerErr.append(sampleAvg-stdErr)
+            
+            if len(remainingIndices) == len(data[g]):
+                numComplete += 1
+            minXIndices = [i for i in range(len(curX)) if curX[i] == minX]
+            for idx in minXIndices:
+                indices[remainingIndices[idx]] += 1
             remainingIndices = [i for i in range(len(indices)) if indices[i] < len(smoothed[i])]
-            while len(remainingIndices) > 0:
-                curX = [xCoords[i][indices[i]] for i in remainingIndices]                    
-                curY = [smoothed[i][indices[i]] for i in remainingIndices]
-                minX = min(curX)
-                combinedXCoords.append(minX)                    
-                avgData.append(sum(curY)/len(curY))
-                if len(remainingIndices) == len(group):
-                    numComplete += 1
-                minXIndices = [i for i in range(len(curX)) if curX[i] == minX]
-                for idx in minXIndices:
-                    indices[remainingIndices[idx]] += 1
-                remainingIndices = [i for i in range(len(indices)) if indices[i] < len(smoothed[i])]
-            fileIdx += 1
 
-        p = axes[axesR][axesC].plot(combinedXCoords[:numComplete], avgData[:numComplete], label='Avg. (' + str(fileIdx-len(group)) + '-' + str(fileIdx-1) + ')')
+        p = axes[axesR][axesC].plot(combinedXCoords[:numComplete], avgData[:numComplete], label=labels[g])
         color = p[0].get_color()
-        lighter = (color[0], color[1], color[2], 0.25)
-        axes[axesR][axesC].plot(combinedXCoords[numComplete:], avgData[numComplete:], color=lighter, label='Inc. (' + str(fileIdx-len(group)) + '-' + str(fileIdx-1) + ')')
-        print('---')
-        
+        lighter = (color[0], color[1], color[2], 0.35)
+        axes[axesR][axesC].plot(combinedXCoords[numComplete:], avgData[numComplete:], color=lighter)
+        if len(data[g]) > 1 and args.error:
+            evenLighter = (color[0], color[1], color[2], 0.25)
+            axes[axesR][axesC].fill_between(combinedXCoords[:numComplete], lowerErr[:numComplete], upperErr[:numComplete], color=evenLighter)
+            reallyLight = (color[0], color[1], color[2], 0.1)
+            axes[axesR][axesC].fill_between(combinedXCoords[numComplete:], lowerErr[numComplete:], upperErr[numComplete:], color=reallyLight)
+        fileIdx += len(data[g])
     if stepCol >= 0:
         axes[axesR][axesC].set_xlabel("Timestep")
     else:
