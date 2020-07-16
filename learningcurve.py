@@ -6,6 +6,8 @@ import sys
 import argparse
 import math
 
+# Takes a list of data and smooths it
+# Each entry in the resulting list is the average smooth entries in the given list
 def smoothData(rawData, smooth):
     if smooth > 0:
         smoothed = [sum(rawData[0:smooth+1])/(smooth+1)]
@@ -52,16 +54,17 @@ else:
 fig, axes = plot.subplots(nrows=numPlotRows, ncols=numPlotCols, squeeze=False)
 
 fileGroups = []
-for f in args.files:
+for f in args.files: # First the individual files
     fileGroups.append([f])
 
-for g in args.avg:
+for g in args.avg: # Then the averaging groups
     fileGroups.append(g)
 
 if len(fileGroups) == 0:
     print("No files given!")
     exit(1)
 
+# Read the files
 data = []
 steps = []
 allUnits = []
@@ -74,15 +77,19 @@ for group in fileGroups:
         labels.append('Avg. (' + str(fileIdx) + '-' + str(fileIdx+len(group)-1) + ')')
     else:
         labels.append('File ' + str(fileIdx))
+
     for filename in group:        
         data[-1].append([[] for i in range(numCols)])
         if stepCol >= 0:
             steps[-1].append([])
             curStep = 0
+
         try:
             fin = open(filename, 'r')
-            fileInfo = str(fileIdx) + ": " + filename
-            if args.ignoreheadings:
+
+            # Figure out the units for different columns
+            # (Silly to do this for every file but...here we are)
+            if args.ignoreheadings: # We'll use the column headings from the file
                 allHeadings = fin.readline().split();
                 selectedHeadings = []
                 for c in range(numCols):
@@ -91,7 +98,7 @@ for group in fileGroups:
                     if len(args.denoms) > c:
                         selectedHeadings[-1] += "/" + allHeadings[args.denoms[c]-1]
                 allUnits = selectedHeadings
-            else:
+            else: # We'll just label things with the column number
                 selectedUnits = []
                 for c in range(numCols):
                     selectedUnits.append("Col " + str(args.column[c]))
@@ -99,6 +106,7 @@ for group in fileGroups:
                         selectedUnits[-1] += " / Col " + str(args.denoms[c])
                 allUnits = selectedUnits
 
+            #Read from the file
             for line in fin:
                 for c in range(numCols):
                     denom = 1
@@ -111,34 +119,49 @@ for group in fileGroups:
                     step = int(line.split()[stepCol])
                     curStep += step
                     steps[-1][-1].append(curStep)
+
+            fileInfo = str(fileIdx) + ": " + filename
             fileInfo += " (" + str(len(steps[-1][-1])) + " eps"
             if stepCol >= 0:
                 fileInfo += ", " + str(steps[-1][-1][-1]) + " frames"
             fileInfo += ")"
             print(fileInfo)
+            
             fin.close()
+
         except Exception as inst:
             sys.stderr.write("Error reading " + filename + "\n")
             sys.stderr.write(str(inst) + "\n")
+
         fileIdx += 1
     print('---')
-            
+
+#Plot the curves
 for c in range(numCols):
+    # Which plot are we talking about?
     axesR = c//numPlotCols
     axesC = c%numPlotCols
-    
+
+    # How much should we smooth?
     smooth = args.smooth - 1
 
     title = ""
     if len(args.title) > c:
         title = args.title[c]
 
+    # Units will be on the y-axis label
     units = allUnits[c]
     if len(args.units) > c:
         units = args.units[c]
 
-    print("Plot " + str(axesR) + ", " + str(axesC) + ": " + units)
+    plotInfo = "Plot " + str(axesR) + ", " + str(axesC) + ": " 
+    if title == "":
+        plotInfo += units
+    else:
+        plotInfo += title
+    print(plotInfo)
 
+    # What are the axis limits of the plot?
     xlim = None
     ylim = None
     if args.xlim != []:
@@ -152,23 +175,26 @@ for c in range(numCols):
         else:
             ylim = [args.ylim[-2], args.ylim[-1]]
 
+    # Automate color selection for curves
     axes[axesR][axesC].set_prop_cycle('color', [plot.cm.jet(i) for i in np.linspace(0.1, 0.9, len(fileGroups))])
 
     fileIdx = 0
     for g in range(len(data)):
+        #First smooth the data
         smoothed = []
         xCoords = []
         for i in range(len(data[g])):
             if len(data[g][i][c]) > smooth:
                 smoothed.append(smoothData(data[g][i][c], smooth))
-                if stepCol > 0:
+                if stepCol > 0: # Use total steps as x-coordinates
                     xCoords.append(steps[g][i][smooth:])
-                else:
-                    xCoords.append(list(range(smooth, len(data[g][i][c]))))
+                else: # Use num episodes as x-coordinates
+                    xCoords.append(list(range(smooth, len(data[g][i][c])))) 
             else:
                 smoothed.append([])
                 xCoords.append([])
 
+        #Compute the averages
         combinedXCoords = []
         avgData = []
         upperErr = []
@@ -177,53 +203,75 @@ for c in range(numCols):
         numComplete = 0
         remainingIndices = [i for i in range(len(indices)) if indices[i] < len(smoothed[i])]
         while len(remainingIndices) > 0:
+            # Find the x-coordinate for this data point
+            # If using num episodes, this is just the next episode index
+            # If using total steps, it's the number of steps all the trials have just crossed
             curX = [xCoords[i][indices[i]] for i in remainingIndices]                    
-            curY = [smoothed[i][indices[i]] for i in remainingIndices]
             minX = min(curX)
             combinedXCoords.append(minX)
+
+            # Find the y-coordinate for this data point (average)
+            curY = [smoothed[i][indices[i]] for i in remainingIndices]
             sampleAvg = sum(curY)/len(curY)
             avgData.append(sampleAvg)
-            sqErrs = [(y - sampleAvg)*(y - sampleAvg) for y in curY]
-            if len(curY) > 1:
-                stdDev = math.sqrt(sum(sqErrs)/(len(curY)-1))
-            else:
-                stdDev = 0
-            stdErr = stdDev/math.sqrt(len(curY))
-            upperErr.append(sampleAvg+stdErr)
-            lowerErr.append(sampleAvg-stdErr)
+
+            # Find the standard error for the average
+            if args.error:
+                if len(curY) > 1:
+                    sqErrs = [(y - sampleAvg)*(y - sampleAvg) for y in curY]
+                    stdDev = math.sqrt(sum(sqErrs)/(len(curY)-1))
+                else:
+                    stdDev = 0
+                stdErr = stdDev/math.sqrt(len(curY))
+                upperErr.append(sampleAvg+stdErr)
+                lowerErr.append(sampleAvg-stdErr)
             
-            if len(remainingIndices) == len(data[g]):
+            if len(remainingIndices) == len(data[g]): # Else: we are averaging a subset
                 numComplete += 1
             minXIndices = [i for i in range(len(curX)) if curX[i] == minX]
             for idx in minXIndices:
                 indices[remainingIndices[idx]] += 1
             remainingIndices = [i for i in range(len(indices)) if indices[i] < len(smoothed[i])]
 
+        # Plot the averages that use all trials
         p = axes[axesR][axesC].plot(combinedXCoords[:numComplete], avgData[:numComplete], label=labels[g])
         color = p[0].get_color()
+        # Plot the averages that use a subset
         lighter = (color[0], color[1], color[2], 0.35)
         axes[axesR][axesC].plot(combinedXCoords[numComplete:], avgData[numComplete:], color=lighter)
         if len(data[g]) > 1 and args.error:
+            # Plot the standard error for averages of all trials
             evenLighter = (color[0], color[1], color[2], 0.25)
             axes[axesR][axesC].fill_between(combinedXCoords[:numComplete], lowerErr[:numComplete], upperErr[:numComplete], color=evenLighter)
-            reallyLight = (color[0], color[1], color[2], 0.1)
+            # Plot the standard error for averages of a subset
+            reallyLight = (color[0], color[1], color[2], 0.15)
             axes[axesR][axesC].fill_between(combinedXCoords[numComplete:], lowerErr[numComplete:], upperErr[numComplete:], color=reallyLight)
+
         fileIdx += len(data[g])
+
+    #Labels and titles
     if stepCol >= 0:
         axes[axesR][axesC].set_xlabel("Timestep")
     else:
         axes[axesR][axesC].set_xlabel("Episode")
     axes[axesR][axesC].set_ylabel(units)
     axes[axesR][axesC].set_title(title)
+
+    #Axis limits
     if ylim != None:
         axes[axesR][axesC].set_ylim(ymin=ylim[0], ymax=ylim[1])
     if xlim != None:
         axes[axesR][axesC].set_xlim(xmin=xlim[0], xmax=xlim[1])
 
+#Place the legend. Try to keep it from overlapping...
 handles, labels = axes[0][0].get_legend_handles_labels()
 legend = fig.legend(handles, labels, loc='upper right')
 bbox = legend.get_window_extent(fig.canvas.get_renderer()).transformed(fig.transFigure.inverted())
+
+#Make the window big (might not be entirely portable across platforms??)
 cfm = plot.get_current_fig_manager()
 cfm.resize(*cfm.window.maxsize())
+
+#Resize things to fit
 fig.set_tight_layout({"rect":(0, 0, (bbox.x0+bbox.x1)/2, 1), "h_pad":0.3, "w_pad":0.3})
 plot.show()
