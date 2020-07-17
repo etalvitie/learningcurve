@@ -233,18 +233,18 @@ for c in range(numCols):
             remainingIndices = [i for i in range(len(indices)) if indices[i] < len(smoothed[i])]
 
         # Plot the averages that use all trials
-        p = axes[axesR][axesC].plot(combinedXCoords[:numComplete], avgData[:numComplete], label=labels[g])
+        p = axes[axesR][axesC].plot(combinedXCoords[:numComplete], avgData[:numComplete], label=labels[g], zorder=2)
         color = p[0].get_color()
         # Plot the averages that use a subset
         lighter = (color[0], color[1], color[2], 0.35)
-        axes[axesR][axesC].plot(combinedXCoords[numComplete:], avgData[numComplete:], color=lighter)
+        axes[axesR][axesC].plot(combinedXCoords[numComplete:], avgData[numComplete:], color=lighter, zorder=2)
         if len(data[g]) > 1 and args.error:
             # Plot the standard error for averages of all trials
             evenLighter = (color[0], color[1], color[2], 0.25)
-            axes[axesR][axesC].fill_between(combinedXCoords[:numComplete], lowerErr[:numComplete], upperErr[:numComplete], color=evenLighter)
+            axes[axesR][axesC].fill_between(combinedXCoords[:numComplete], lowerErr[:numComplete], upperErr[:numComplete], color=evenLighter, zorder=1)
             # Plot the standard error for averages of a subset
             reallyLight = (color[0], color[1], color[2], 0.15)
-            axes[axesR][axesC].fill_between(combinedXCoords[numComplete:], lowerErr[numComplete:], upperErr[numComplete:], color=reallyLight)
+            axes[axesR][axesC].fill_between(combinedXCoords[numComplete:], lowerErr[numComplete:], upperErr[numComplete:], color=reallyLight, zorder=1)
 
         fileIdx += len(data[g])
 
