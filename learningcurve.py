@@ -69,7 +69,9 @@ steps = []
 allUnits = []
 labels = []
 fileIdx = 1
-for group in fileGroups:
+for g in range(len(fileGroups)):
+    group = fileGroups[g]
+    print("Group " + str(g) + ": " + str(len(group)) + " files")
     data.append([])
     steps.append([])
     if len(group) > 1:
