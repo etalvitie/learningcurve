@@ -269,9 +269,7 @@ handles, labels = axes[0][0].get_legend_handles_labels()
 legend = fig.legend(handles, labels, loc='upper right')
 bbox = legend.get_window_extent(fig.canvas.get_renderer()).transformed(fig.transFigure.inverted())
 
-#Make the window big (might not be entirely portable across platforms??)
-cfm = plot.get_current_fig_manager()
-cfm.resize(*cfm.window.maxsize())
+fig.set_size_inches((4*numPlotCols, 3*numPlotRows))
 
 #Resize things to fit
 fig.set_tight_layout({"rect":(0, 0, (bbox.x0+bbox.x1)/2, 1), "h_pad":0.3, "w_pad":0.3})
