@@ -95,9 +95,15 @@ for g in range(len(fileGroups)):
                 selectedHeadings = []
                 for c in range(numCols):
                     column = args.column[c] - 1
-                    selectedHeadings.append(allHeadings[column])
+                    if column < len(allHeadings):
+                        selectedHeadings.append(allHeadings[column])
+                    else:
+                        selectedHeadings.append("Col " + str(args.column[c]))
                     if len(args.denoms) > c:
-                        selectedHeadings[-1] += "/" + allHeadings[args.denoms[c]-1]
+                        if args.denoms[c] - 1 < len(allHeadings):
+                            selectedHeadings[-1] += "/" + allHeadings[args.denoms[c]-1]
+                        else:
+                            selectedHeadings[-1] += "/" + "Col " + str(args.denoms[c])
                 allUnits = selectedHeadings
             else: # We'll just label things with the column number
                 selectedUnits = []
@@ -109,15 +115,17 @@ for g in range(len(fileGroups)):
 
             #Read from the file
             for line in fin:
+                splitLine = line.split()
                 for c in range(numCols):
-                    denom = 1
-                    if len(args.denoms) > c:
-                        denomCol = args.denoms[c] - 1
-                        denom = float(line.split()[denomCol])
-                    score = float(line.split()[args.column[c]-1])/denom
-                    data[-1][-1][c].append(score)
+                    if args.column[c] - 1 < len(splitLine):
+                        denom = 1
+                        if len(args.denoms) > c:
+                            denomCol = args.denoms[c] - 1
+                            denom = float(splitLine[denomCol])
+                        score = float(splitLine[args.column[c]-1])/denom
+                        data[-1][-1][c].append(score)
                 if stepCol >= 0:
-                    step = int(line.split()[stepCol])
+                    step = int(splitLine[stepCol])
                     curStep += step
                     steps[-1][-1].append(curStep)
 
