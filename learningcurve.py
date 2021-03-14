@@ -23,14 +23,16 @@ parser = argparse.ArgumentParser(description='Display learning curves from the g
 
 parser.add_argument('files', metavar='FILE', nargs='*', help='file containing the score for each episode in a column.')
 parser.add_argument('-i', '--ignoreheadings', action='store_true', default=False, help='ignore the first line of the input file.')
+parser.add_argument('-k', '--skiprows', metavar='NUMROWS', type=int, default=0, help='Skip NUMROWS rows for every row read in from a file (default: 0)')
 parser.add_argument('-c', '--column', type=int, default=[1], nargs='+', help='Sets the columns in the files that contain data to be plotted. Multiple provided columns will yield subplots, one for each column (default: 1).')
-parser.add_argument('-s', '--smooth', type=int, default=1, help='the size of the smoothing window (default: %(default)s, which is no smoothing).')
-parser.add_argument('-a', '--avg', action='append', type=str, nargs='+', metavar='FILE', help='The provided files will be averaged together. This option can be used multiple times to create multiple groups to be averaged together.')
-parser.add_argument('-e', '--error', action='store_true', default=False, help='display standard error of averages')
 parser.add_argument('-t', '--timesteps', metavar='COLUMN', type=int, default=0, help='uses the number of steps from the supplied column to display learning versus number of steps rather than number of episodes (has no effect when combined with -a).')
 parser.add_argument('-d', '--denoms', type=int, default=[], nargs='+', help='Values in data column will be divided by values in this column. Multiple values will be matched with corresponding data columns (give 0 to indicate no denominator).')
+parser.add_argument('-a', '--avg', action='append', type=str, nargs='+', metavar='FILE', help='The provided files will be averaged together. This option can be used multiple times to create multiple groups to be averaged together.')
+parser.add_argument('-g', '--groupnames', type=str, default=[], nargs='+', metavar='NAME', help='Labels the lines with the given names (if not enough are given, default names are assigned).')
+parser.add_argument('-e', '--error', action='store_true', default=False, help='display standard error of averages')
+parser.add_argument('-s', '--smooth', type=int, default=1, help='the size of the smoothing window (default: %(default)s, which is no smoothing).')
 parser.add_argument('-l', '--title', metavar='TITLE', type=str, default=[], nargs='+', help='The titles to display for the subplots (default title is blank).')
-parser.add_argument('-u', '--units', type=str, default=[], nargs='+', help='These strings will label the y-axes of the subplots (default label is Score").')
+parser.add_argument('-u', '--units', type=str, default=[], nargs='+', help='These strings will label the y-axes of the subplots.')
 parser.add_argument('-y', '--ylim', type=float, default = [], nargs='+', help='Sets the limits of the y-axes. Set MIN = MAX to use default axis limits.', metavar=('MIN MAX'))
 parser.add_argument('-x', '--xlim', type=float, default = [], nargs='+', help='Sets the limits of the x-axes. Set MIN = MAX to use default axis limits.', metavar=('MIN MAX'))
 
@@ -63,18 +65,28 @@ if len(fileGroups) == 0:
     print("No files given!")
     exit(1)
 
+allUnits = []
+for c in range(numCols):
+    allUnits.append("Col " + str(args.column[c]))
+    if len(args.denoms) > c:
+        allUnits[-1] += " / Col " + str(args.denoms[c])
+    
 # Read the files
 data = []
 steps = []
-allUnits = []
 labels = []
 fileIdx = 1
 for g in range(len(fileGroups)):
     group = fileGroups[g]
-    print("Group " + str(g) + ": " + str(len(group)) + " files")
+    if g < len(args.groupnames):
+        print("Group " + args.groupnames[g] + ": " + str(len(group)) + " files")
+    else:
+        print("Group " + str(g) + ": " + str(len(group)) + " files")        
     data.append([])
     steps.append([])
-    if len(group) > 1:
+    if g < len(args.groupnames):
+        labels.append(args.groupnames[g])
+    elif len(group) > 1:
         labels.append('Avg. (' + str(fileIdx) + '-' + str(fileIdx+len(group)-1) + ')')
     else:
         labels.append('File ' + str(fileIdx))
@@ -92,29 +104,16 @@ for g in range(len(fileGroups)):
             # (Silly to do this for every file but...here we are)
             if args.ignoreheadings: # We'll use the column headings from the file
                 allHeadings = fin.readline().split();
-                selectedHeadings = []
                 for c in range(numCols):
                     column = args.column[c] - 1
                     if column < len(allHeadings):
-                        selectedHeadings.append(allHeadings[column])
-                    else:
-                        selectedHeadings.append("Col " + str(args.column[c]))
-                    if len(args.denoms) > c:
-                        if args.denoms[c] - 1 < len(allHeadings):
-                            selectedHeadings[-1] += "/" + allHeadings[args.denoms[c]-1]
-                        else:
-                            selectedHeadings[-1] += "/" + "Col " + str(args.denoms[c])
-                allUnits = selectedHeadings
-            else: # We'll just label things with the column number
-                selectedUnits = []
-                for c in range(numCols):
-                    selectedUnits.append("Col " + str(args.column[c]))
-                    if len(args.denoms) > c:
-                        selectedUnits[-1] += " / Col " + str(args.denoms[c])
-                allUnits = selectedUnits
+                        allUnits[c] = allHeadings[column]
+                        if len(args.denoms) > c:
+                            allUnits[c] += "/" + allHeadings[args.denoms[c]-1]
 
             #Read from the file
-            for line in fin:
+            line = fin.readline()
+            while line != '':
                 splitLine = line.split()
                 for c in range(numCols):
                     if args.column[c] - 1 < len(splitLine):
@@ -128,6 +127,16 @@ for g in range(len(fileGroups)):
                     step = int(splitLine[stepCol])
                     curStep += step
                     steps[-1][-1].append(curStep)
+                line = fin.readline()
+
+                skip = 0
+                while skip < args.skiprows and line != '':
+                    nextLine = fin.readline()
+                    if nextLine != '':
+                        if stepCol > 0:
+                            curStep += int(line.split()[stepCol])
+                        line = nextLine
+                    skip += 1
 
             fileInfo = str(fileIdx) + ": " + filename
             fileInfo += " (" + str(len(steps[-1][-1])) + " eps"
@@ -185,7 +194,7 @@ for c in range(numCols):
             ylim = [args.ylim[-2], args.ylim[-1]]
 
     # Automate color selection for curves
-    axes[axesR][axesC].set_prop_cycle('color', [plot.cm.jet(i) for i in np.linspace(0.1, 0.9, len(fileGroups))])
+    axes[axesR][axesC].set_prop_cycle('color', [plot.cm.turbo(i) for i in np.linspace(0.1, 0.9, len(fileGroups))])
 
     fileIdx = 0
     for g in range(len(data)):
@@ -277,7 +286,10 @@ handles, labels = axes[0][0].get_legend_handles_labels()
 legend = fig.legend(handles, labels, loc='upper right')
 bbox = legend.get_window_extent(fig.canvas.get_renderer()).transformed(fig.transFigure.inverted())
 
-fig.set_size_inches((4*numPlotCols, 3*numPlotRows))
+figWidth = min(4*numPlotCols, 16)
+figHeight = min(3*numPlotRows, 8)
+
+fig.set_size_inches((figWidth, figHeight))
 
 #Resize things to fit
 fig.set_tight_layout({"rect":(0, 0, (bbox.x0+bbox.x1)/2, 1), "h_pad":0.3, "w_pad":0.3})
