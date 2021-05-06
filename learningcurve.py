@@ -68,7 +68,7 @@ if len(fileGroups) == 0:
 allUnits = []
 for c in range(numCols):
     allUnits.append("Col " + str(args.column[c]))
-    if len(args.denoms) > c:
+    if len(args.denoms) > c and args.denoms[c] != 0:
         allUnits[-1] += " / Col " + str(args.denoms[c])
     
 # Read the files
@@ -108,7 +108,7 @@ for g in range(len(fileGroups)):
                     column = args.column[c] - 1
                     if column < len(allHeadings):
                         allUnits[c] = allHeadings[column]
-                        if len(args.denoms) > c:
+                        if len(args.denoms) > c and args.denoms[c] != 0:
                             allUnits[c] += "/" + allHeadings[args.denoms[c]-1]
 
             #Read from the file
@@ -118,7 +118,7 @@ for g in range(len(fileGroups)):
                 for c in range(numCols):
                     if args.column[c] - 1 < len(splitLine):
                         denom = 1
-                        if len(args.denoms) > c:
+                        if len(args.denoms) > c and args.denoms[c] != 0:
                             denomCol = args.denoms[c] - 1
                             denom = float(splitLine[denomCol])
                         score = float(splitLine[args.column[c]-1])/denom
