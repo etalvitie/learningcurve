@@ -121,7 +121,10 @@ for g in range(len(fileGroups)):
                         if len(args.denoms) > c and args.denoms[c] != 0:
                             denomCol = args.denoms[c] - 1
                             denom = float(splitLine[denomCol])
-                        score = float(splitLine[args.column[c]-1])/denom
+                        if denom == 0:
+                            score = 0
+                        else:
+                            score = float(splitLine[args.column[c]-1])/denom
                         data[-1][-1][c].append(score)
                 if stepCol >= 0:
                     step = int(splitLine[stepCol])
