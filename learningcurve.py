@@ -35,6 +35,7 @@ parser.add_argument('-l', '--title', metavar='TITLE', type=str, default=[], narg
 parser.add_argument('-u', '--units', type=str, default=[], nargs='+', help='These strings will label the y-axes of the subplots.')
 parser.add_argument('-y', '--ylim', type=float, default = [], nargs='+', help='Sets the limits of the y-axes. Set MIN = MAX to use default axis limits.', metavar=('MIN MAX'))
 parser.add_argument('-x', '--xlim', type=float, default = [], nargs='+', help='Sets the limits of the x-axes. Set MIN = MAX to use default axis limits.', metavar=('MIN MAX'))
+parser.add_argument('-n', '--filename', type=str, default=None, nargs='?', help="File name. If set, will save plot to file and will not display in window")
 
 args = parser.parse_args()
 
@@ -70,7 +71,7 @@ for c in range(numCols):
     allUnits.append("Col " + str(args.column[c]))
     if len(args.denoms) > c and args.denoms[c] != 0:
         allUnits[-1] += " / Col " + str(args.denoms[c])
-    
+
 # Read the files
 data = []
 steps = []
@@ -81,7 +82,7 @@ for g in range(len(fileGroups)):
     if g < len(args.groupnames):
         print("Group " + args.groupnames[g] + ": " + str(len(group)) + " files")
     else:
-        print("Group " + str(g) + ": " + str(len(group)) + " files")        
+        print("Group " + str(g) + ": " + str(len(group)) + " files")
     data.append([])
     steps.append([])
     if g < len(args.groupnames):
@@ -91,7 +92,7 @@ for g in range(len(fileGroups)):
     else:
         labels.append('File ' + str(fileIdx))
 
-    for filename in group:        
+    for filename in group:
         data[-1].append([[] for i in range(numCols)])
         if stepCol >= 0:
             steps[-1].append([])
@@ -147,7 +148,7 @@ for g in range(len(fileGroups)):
                 fileInfo += ", " + str(steps[-1][-1][-1]) + " frames"
             fileInfo += ")"
             print(fileInfo)
-            
+
             fin.close()
 
         except Exception as inst:
@@ -175,7 +176,7 @@ for c in range(numCols):
     if len(args.units) > c:
         units = args.units[c]
 
-    plotInfo = "Plot " + str(axesR) + ", " + str(axesC) + ": " 
+    plotInfo = "Plot " + str(axesR) + ", " + str(axesC) + ": "
     if title == "":
         plotInfo += units
     else:
@@ -210,7 +211,7 @@ for c in range(numCols):
                 if stepCol > 0: # Use total steps as x-coordinates
                     xCoords.append(steps[g][i][smooth:])
                 else: # Use num episodes as x-coordinates
-                    xCoords.append(list(range(smooth, len(data[g][i][c])))) 
+                    xCoords.append(list(range(smooth, len(data[g][i][c]))))
             else:
                 smoothed.append([])
                 xCoords.append([])
@@ -227,7 +228,7 @@ for c in range(numCols):
             # Find the x-coordinate for this data point
             # If using num episodes, this is just the next episode index
             # If using total steps, it's the number of steps all the trials have just crossed
-            curX = [xCoords[i][indices[i]] for i in remainingIndices]                    
+            curX = [xCoords[i][indices[i]] for i in remainingIndices]
             minX = min(curX)
             combinedXCoords.append(minX)
 
@@ -246,7 +247,7 @@ for c in range(numCols):
                 stdErr = stdDev/math.sqrt(len(curY))
                 upperErr.append(sampleAvg+stdErr)
                 lowerErr.append(sampleAvg-stdErr)
-            
+
             if len(remainingIndices) == len(data[g]): # Else: we are averaging a subset
                 numComplete += 1
             minXIndices = [i for i in range(len(curX)) if curX[i] == minX]
@@ -296,4 +297,8 @@ fig.set_size_inches((figWidth, figHeight))
 
 #Resize things to fit
 fig.set_tight_layout({"rect":(0, 0, (bbox.x0+bbox.x1)/2, 1), "h_pad":0.3, "w_pad":0.3})
-plot.show()
+
+if args.filename:
+    plot.savefig(args.filename)
+else:
+    plot.show()
