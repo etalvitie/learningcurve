@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib
-matplotlib.use('TkAgg')
 import matplotlib.pyplot as plot
 import sys
 import argparse
@@ -38,6 +37,9 @@ parser.add_argument('-x', '--xlim', type=float, default = [], nargs='+', help='S
 parser.add_argument('-n', '--filename', type=str, default=None, nargs='?', help="File name. If set, will save plot to file and will not display in window")
 
 args = parser.parse_args()
+
+if args.filename == None:
+    matplotlib.use('TkAgg')
 
 if len(args.ylim)%2 != 0 or len(args.xlim)%2 != 0:
     print("Number of arguments to -x and -y must be even")
