@@ -59,8 +59,11 @@ fileGroups = []
 for f in args.files: # First the individual files
     fileGroups.append([f])
 
-for g in args.avg: # Then the averaging groups
-    fileGroups.append(g)
+if len(args.avg) == 0:
+    fileGroups = [[f] for f in args.files]
+else:
+    for g in args.avg: # Then the averaging groups
+        fileGroups.append(g)
 
 if len(fileGroups) == 0:
     print("No files given!")
