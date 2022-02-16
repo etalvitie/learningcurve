@@ -61,7 +61,7 @@ fileGroups = []
 for f in args.files: # First the individual files
     fileGroups.append([f])
 
-if len(args.avg) == 0:
+if args.avg == None:
     fileGroups = [[f] for f in args.files]
 else:
     for g in args.avg: # Then the averaging groups
