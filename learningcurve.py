@@ -261,10 +261,10 @@ for c in range(numCols):
             remainingIndices = [i for i in range(len(indices)) if indices[i] < len(smoothed[i])]
         totalChanges.append(len(combinedXCoords))
 
+        color = next(axes[axesR][axesC]._get_lines.prop_cycler)['color']
         for c in range(len(totalChanges) - 1):
             startIdx = totalChanges[c]
             endIdx = totalChanges[c+1]
-            color = next(axes[axesR][axesC]._get_lines.prop_cycler)['color']
             shadedColor = (color[0], color[1], color[2], totals[c]/len(data[g]))
             lineLabel = None
             if c == 0:
