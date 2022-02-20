@@ -267,7 +267,7 @@ for c in range(numCols):
             endIdx = totalChanges[t+1]
             shadedColor = (color[0], color[1], color[2], totals[t]/len(data[g]))
             lineLabel = None
-            if c == 0:
+            if t == 0:
                 lineLabel = labels[g]
             # Plot the averages
             p = axes[axesR][axesC].plot(combinedXCoords[startIdx:endIdx], avgData[startIdx:endIdx], label=lineLabel, color=shadedColor, zorder=2)
