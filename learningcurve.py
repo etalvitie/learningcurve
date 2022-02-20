@@ -264,7 +264,7 @@ for c in range(numCols):
         for c in range(len(totalChanges) - 1):
             startIdx = totalChanges[c]
             endIdx = totalChanges[c+1]
-            color = next(axes._get_lines.prop_cycler)['color']
+            color = next(axes[axesR][axesC]._get_lines.prop_cycler)['color']
             shadedColor = (color[0], color[1], color[2], totals[c]/len(data[g]))
             lineLabel = None
             if c == 0:
