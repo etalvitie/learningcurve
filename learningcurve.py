@@ -262,10 +262,10 @@ for c in range(numCols):
         totalChanges.append(len(combinedXCoords))
 
         color = next(axes[axesR][axesC]._get_lines.prop_cycler)['color']
-        for c in range(len(totalChanges) - 1):
-            startIdx = totalChanges[c]
-            endIdx = totalChanges[c+1]
-            shadedColor = (color[0], color[1], color[2], totals[c]/len(data[g]))
+        for t in range(len(totalChanges) - 1):
+            startIdx = totalChanges[t]
+            endIdx = totalChanges[t+1]
+            shadedColor = (color[0], color[1], color[2], totals[t]/len(data[g]))
             lineLabel = None
             if c == 0:
                 lineLabel = labels[g]
@@ -273,7 +273,7 @@ for c in range(numCols):
             p = axes[axesR][axesC].plot(combinedXCoords[startIdx:endIdx], avgData[startIdx:endIdx], label=lineLabel, color=shadedColor, zorder=2)
             if len(data[g]) > 1 and args.error:
                 # Plot the standard error
-                lighter = (color[0], color[1], color[2], 0.25*(totals[c]/len(data[g])))
+                lighter = (color[0], color[1], color[2], shadedColor[3]*0.25)
                 axes[axesR][axesC].fill_between(combinedXCoords[startIdx:endIdx], lowerErr[startIdx:endIdx], upperErr[startIdx:endIdx], color=lighter, zorder=1)
 
         fileIdx += len(data[g])
