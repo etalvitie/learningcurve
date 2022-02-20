@@ -61,9 +61,7 @@ fileGroups = []
 for f in args.files: # First the individual files
     fileGroups.append([f])
 
-if args.avg == None:
-    fileGroups = [[f] for f in args.files]
-else:
+if args.avg != None:
     for g in args.avg: # Then the averaging groups
         fileGroups.append(g)
 
@@ -227,6 +225,8 @@ for c in range(numCols):
         upperErr = []
         lowerErr = []
         indices = [0]*len(smoothed)
+        totalChanges = [0]
+        totals = [len(remainingIndices)]
         numComplete = 0
         remainingIndices = [i for i in range(len(indices)) if indices[i] < len(smoothed[i])]
         while len(remainingIndices) > 0:
@@ -253,26 +253,29 @@ for c in range(numCols):
                 upperErr.append(sampleAvg+stdErr)
                 lowerErr.append(sampleAvg-stdErr)
 
-            if len(remainingIndices) == len(data[g]): # Else: we are averaging a subset
-                numComplete += 1
+            if len(remainingIndices) < totals[-1]:
+                totalChanges.append(len(combinedXCoords))
+                totals.append(len(remainingIndices))
             minXIndices = [i for i in range(len(curX)) if curX[i] == minX]
             for idx in minXIndices:
                 indices[remainingIndices[idx]] += 1
             remainingIndices = [i for i in range(len(indices)) if indices[i] < len(smoothed[i])]
+        totalChanges.append(len(combinedXCoords))
 
-        # Plot the averages that use all trials
-        p = axes[axesR][axesC].plot(combinedXCoords[:numComplete], avgData[:numComplete], label=labels[g], zorder=2)
-        color = p[0].get_color()
-        # Plot the averages that use a subset
-        lighter = (color[0], color[1], color[2], 0.35)
-        axes[axesR][axesC].plot(combinedXCoords[numComplete:], avgData[numComplete:], color=lighter, zorder=2)
-        if len(data[g]) > 1 and args.error:
-            # Plot the standard error for averages of all trials
-            evenLighter = (color[0], color[1], color[2], 0.25)
-            axes[axesR][axesC].fill_between(combinedXCoords[:numComplete], lowerErr[:numComplete], upperErr[:numComplete], color=evenLighter, zorder=1)
-            # Plot the standard error for averages of a subset
-            reallyLight = (color[0], color[1], color[2], 0.15)
-            axes[axesR][axesC].fill_between(combinedXCoords[numComplete:], lowerErr[numComplete:], upperErr[numComplete:], color=reallyLight, zorder=1)
+        for c in range(len(totalChanges) - 1):
+            startIdx = totalChanges[c]
+            endIdx = totalChanges[c+1]
+            color = next(axes._get_lines.prop_cycler)['color']
+            shadedColor = (color[0], color[1], color[2], totals[c]/len(data[g]))
+            lineLabel = None
+            if c == 0:
+                lineLabel = labels[g]
+            # Plot the averages
+            p = axes[axesR][axesC].plot(combinedXCoords[startIdx:endIdx], avgData[startIdx:endIdx], label=lineLabel, shadedColor, zorder=2)
+            if len(data[g]) > 1 and args.error:
+                # Plot the standard error
+                lighter = (color[0], color[1], color[2], 0.25*(totals[c]/len(data[g])))
+                axes[axesR][axesC].fill_between(combinedXCoords[:numComplete], lowerErr[:numComplete], upperErr[:numComplete], color=lighter, zorder=1)
 
         fileIdx += len(data[g])
 
