@@ -271,7 +271,7 @@ for c in range(numCols):
             if c == 0:
                 lineLabel = labels[g]
             # Plot the averages
-            p = axes[axesR][axesC].plot(combinedXCoords[startIdx:endIdx], avgData[startIdx:endIdx], label=lineLabel, shadedColor, zorder=2)
+            p = axes[axesR][axesC].plot(combinedXCoords[startIdx:endIdx], avgData[startIdx:endIdx], label=lineLabel, color=shadedColor, zorder=2)
             if len(data[g]) > 1 and args.error:
                 # Plot the standard error
                 lighter = (color[0], color[1], color[2], 0.25*(totals[c]/len(data[g])))
