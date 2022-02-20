@@ -274,7 +274,7 @@ for c in range(numCols):
             if len(data[g]) > 1 and args.error:
                 # Plot the standard error
                 lighter = (color[0], color[1], color[2], 0.25*(totals[c]/len(data[g])))
-                axes[axesR][axesC].fill_between(combinedXCoords[:numComplete], lowerErr[:numComplete], upperErr[:numComplete], color=lighter, zorder=1)
+                axes[axesR][axesC].fill_between(combinedXCoords[startIdx:endIdx], lowerErr[startIdx:endIdx], upperErr[startIdx:endIdx], color=lighter, zorder=1)
 
         fileIdx += len(data[g])
 
