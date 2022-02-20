@@ -225,10 +225,9 @@ for c in range(numCols):
         upperErr = []
         lowerErr = []
         indices = [0]*len(smoothed)
+        remainingIndices = [i for i in range(len(indices)) if indices[i] < len(smoothed[i])]
         totalChanges = [0]
         totals = [len(remainingIndices)]
-        numComplete = 0
-        remainingIndices = [i for i in range(len(indices)) if indices[i] < len(smoothed[i])]
         while len(remainingIndices) > 0:
             # Find the x-coordinate for this data point
             # If using num episodes, this is just the next episode index
