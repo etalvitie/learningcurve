@@ -191,14 +191,14 @@ for c in range(numCols):
     ylim = None
     if args.xlim != []:
         limIndices = [2*c, 2*c+1]
-        if 2*c <= len(args.xlim):
+        if 2*c >= len(args.xlim):
             limIndices = [-2, -1]
             
         if args.xlim[limIndices[0]] != args.xlim[limIndices[1]]:
             xlim = [args.xlim[limIndices[0]], args.xlim[limIndices[1]]]                
     if args.ylim != []:
         limIndices = [2*c, 2*c+1]
-        if 2*c <= len(args.ylim):
+        if 2*c >= len(args.ylim):
             limIndices = [-2, -1]
             
         if args.ylim[limIndices[0]] != args.ylim[limIndices[1]]:
