@@ -296,7 +296,7 @@ for c in range(numCols):
         if c >= len(args.log):
             logIdx = -1
 
-        if self.log[logIdx]:
+        if args.log[logIdx]:
             axes[axesR][axesC].yscale("log")
     
 
