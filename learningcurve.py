@@ -202,7 +202,7 @@ for c in range(numCols):
             limIndices = [-2, -1]
             
         if args.ylim[limIndices[0]] != args.ylim[limIndices[1]]:
-            ylim = [args.ylim[limIndices[0]], args.xlim[limIndices[1]]]
+            ylim = [args.ylim[limIndices[0]], args.ylim[limIndices[1]]]
 
     # Automate color selection for curves
     axes[axesR][axesC].set_prop_cycle('color', [plot.cm.turbo(i) for i in np.linspace(0.1, 0.9, len(fileGroups))])
