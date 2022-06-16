@@ -34,7 +34,7 @@ parser.add_argument('-l', '--title', metavar='TITLE', type=str, default=[], narg
 parser.add_argument('-u', '--units', type=str, default=[], nargs='+', help='These strings will label the y-axes of the subplots.')
 parser.add_argument('-y', '--ylim', type=float, default = [], nargs='+', help='Sets the limits of the y-axes. Set MIN = MAX to use default axis limits.', metavar=('MIN MAX'))
 parser.add_argument('-x', '--xlim', type=float, default = [], nargs='+', help='Sets the limits of the x-axes. Set MIN = MAX to use default axis limits.', metavar=('MIN MAX'))
-parser.add_argument('-L', '--log', action='append' type=int, help='Sets the y-axis of the given plot to log scale. Can be used multiple times.', metavar=('PLOT'))
+parser.add_argument('-L', '--log', action='append', type=int, help='Sets the y-axis of the given plot to log scale. Can be used multiple times.', metavar=('PLOT'))
 parser.add_argument('-n', '--filename', type=str, default=None, nargs='?', help="File name. If set, will save plot to file and will not display in window")
 
 args = parser.parse_args()
