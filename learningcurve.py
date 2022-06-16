@@ -34,6 +34,7 @@ parser.add_argument('-l', '--title', metavar='TITLE', type=str, default=[], narg
 parser.add_argument('-u', '--units', type=str, default=[], nargs='+', help='These strings will label the y-axes of the subplots.')
 parser.add_argument('-y', '--ylim', type=float, default = [], nargs='+', help='Sets the limits of the y-axes. Set MIN = MAX to use default axis limits.', metavar=('MIN MAX'))
 parser.add_argument('-x', '--xlim', type=float, default = [], nargs='+', help='Sets the limits of the x-axes. Set MIN = MAX to use default axis limits.', metavar=('MIN MAX'))
+parser.add_argument('l', '--log', type=bool, default = [], nargs='+', help='Sets y-axes to log scale. For each axis use 0 for no log scale and 1 for log scale', metavar=('LOG'))
 parser.add_argument('-n', '--filename', type=str, default=None, nargs='?', help="File name. If set, will save plot to file and will not display in window")
 
 args = parser.parse_args()
@@ -289,6 +290,15 @@ for c in range(numCols):
         axes[axesR][axesC].set_xlabel("Episode")
     axes[axesR][axesC].set_ylabel(units)
     axes[axesR][axesC].set_title(title)
+
+    if args.log != []:
+        logIdx = c
+        if c >= len(args.log):
+            logIdx = -1
+
+        if self.log[logIdx]:
+            axes[axesR][axesC].yscale("log")
+    
 
     #Axis limits
     if ylim != None:
