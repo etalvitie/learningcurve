@@ -184,7 +184,7 @@ for c in range(numCols):
         plotInfo += units
     else:
         plotInfo += title
-    print(plotInfo)
+    print(plotInfo, flush=True)
 
     # What are the axis limits of the plot?
     xlim = None
