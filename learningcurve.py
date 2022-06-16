@@ -297,7 +297,7 @@ for c in range(numCols):
             logIdx = -1
 
         if args.log[logIdx]:
-            axes[axesR][axesC].yscale("log")
+            axes[axesR][axesC].set_yscale("log")
     
 
     #Axis limits
