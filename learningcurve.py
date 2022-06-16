@@ -190,15 +190,19 @@ for c in range(numCols):
     xlim = None
     ylim = None
     if args.xlim != []:
-        if len(args.xlim) > 2*c and args.xlim[2*c] != args.xlim[2*c+1]:
-            xlim = [args.xlim[2*c], args.xlim[2*c+1]]
-        else:
-            xlim = [args.xlim[-2], args.xlim[-1]]
+        limIndices = [2*c, 2*c+1]
+        if 2*c <= len(args.xlim):
+            limIndices = [-2, -1]
+            
+        if args.xlim[limIndices[0]] != args.xlim[limIndices[1]]:
+            xlim = [args.xlim[limIndices[0]], args.xlim[limIndices[1]]]                
     if args.ylim != []:
-        if len(args.ylim) > 2*c and args.ylim[2*c] != args.ylim[2*c+1]:
-            ylim = [args.ylim[2*c], args.ylim[2*c+1]]
-        else:
-            ylim = [args.ylim[-2], args.ylim[-1]]
+        limIndices = [2*c, 2*c+1]
+        if 2*c <= len(args.ylim):
+            limIndices = [-2, -1]
+            
+        if args.ylim[limIndices[0]] != args.ylim[limIndices[1]]:
+            ylim = [args.ylim[limIndices[0]], args.xlim[limIndices[1]]]
 
     # Automate color selection for curves
     axes[axesR][axesC].set_prop_cycle('color', [plot.cm.turbo(i) for i in np.linspace(0.1, 0.9, len(fileGroups))])
