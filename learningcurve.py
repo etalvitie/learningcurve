@@ -26,7 +26,7 @@ parser.add_argument('-k', '--skiprows', metavar='NUMROWS', type=int, default=0, 
 parser.add_argument('-c', '--column', type=int, default=[1], nargs='+', help='Sets the columns in the files that contain data to be plotted. Multiple provided columns will yield subplots, one for each column (default: 1).')
 parser.add_argument('-t', '--timesteps', metavar='COLUMN', type=int, default=0, help='uses the number of steps from the supplied column to display learning versus number of steps rather than number of episodes (has no effect when combined with -a).')
 parser.add_argument('-d', '--denoms', type=int, default=[], nargs='+', help='Values in data column will be divided by values in this column. Multiple values will be matched with corresponding data columns (give 0 to indicate no denominator).')
-parser.add_argument('-a', '--avg', action='append', type=str, nargs='+', metavar='FILE', help='The provided files will be averaged together. This option can be used multiple times to create multiple groups to be averaged together.')
+parser.add_argument('-a', '--avg', action='append', type=str, nargs='*', metavar='FILE', help='The provided files will be averaged together. This option can be used multiple times to create multiple groups to be averaged together.')
 parser.add_argument('-g', '--groupnames', type=str, default=[], nargs='+', metavar='NAME', help='Labels the lines with the given names (if not enough are given, default names are assigned).')
 parser.add_argument('-e', '--error', action='store_true', default=False, help='display standard error of averages')
 parser.add_argument('-s', '--smooth', type=int, default=1, help='the size of the smoothing window (default: %(default)s, which is no smoothing).')
@@ -83,83 +83,86 @@ labels = []
 fileIdx = 1
 for g in range(len(fileGroups)):
     group = fileGroups[g]
-    if g < len(args.groupnames):
-        print("Group " + args.groupnames[g] + ": " + str(len(group)) + " files")
+    if len(group) == 0:
+        print("Warning: file group " + str(g) + " is empty")
     else:
-        print("Group " + str(g) + ": " + str(len(group)) + " files")
-    data.append([])
-    steps.append([])
-    if g < len(args.groupnames):
-        labels.append(args.groupnames[g])
-    elif len(group) > 1:
-        labels.append('Avg. (' + str(fileIdx) + '-' + str(fileIdx+len(group)-1) + ')')
-    else:
-        labels.append('File ' + str(fileIdx))
+        if g < len(args.groupnames):
+            print("Group " + args.groupnames[g] + ": " + str(len(group)) + " files")
+        else:
+            print("Group " + str(g) + ": " + str(len(group)) + " files")
+        data.append([])
+        steps.append([])
+        if g < len(args.groupnames):
+            labels.append(args.groupnames[g])
+        elif len(group) > 1:
+            labels.append('Avg. (' + str(fileIdx) + '-' + str(fileIdx+len(group)-1) + ')')
+        else:
+            labels.append('File ' + str(fileIdx))
 
-    for filename in group:
-        data[-1].append([[] for i in range(numCols)])
-        if stepCol >= 0:
-            steps[-1].append([])
-            curStep = 0
-
-        try:
-            fin = open(filename, 'r')
-
-            # Figure out the units for different columns
-            # (Silly to do this for every file but...here we are)
-            if args.ignoreheadings: # We'll use the column headings from the file
-                allHeadings = fin.readline().split();
-                for c in range(numCols):
-                    column = args.column[c] - 1
-                    if column < len(allHeadings):
-                        allUnits[c] = allHeadings[column]
-                        if len(args.denoms) > c and args.denoms[c] != 0:
-                            allUnits[c] += "/" + allHeadings[args.denoms[c]-1]
-
-            #Read from the file
-            line = fin.readline()
-            while line != '':
-                splitLine = line.split()
-                for c in range(numCols):
-                    if args.column[c] - 1 < len(splitLine):
-                        denom = 1
-                        if len(args.denoms) > c and args.denoms[c] != 0:
-                            denomCol = args.denoms[c] - 1
-                            denom = float(splitLine[denomCol])
-                        if denom == 0:
-                            score = 0
-                        else:
-                            score = float(splitLine[args.column[c]-1])/denom
-                        data[-1][-1][c].append(score)
-                if stepCol >= 0:
-                    step = int(splitLine[stepCol])
-                    curStep += step
-                    steps[-1][-1].append(curStep)
-                line = fin.readline()
-
-                skip = 0
-                while skip < args.skiprows and line != '':
-                    nextLine = fin.readline()
-                    if nextLine != '':
-                        if stepCol > 0:
-                            curStep += int(line.split()[stepCol])
-                        line = nextLine
-                    skip += 1
-
-            fileInfo = str(fileIdx) + ": " + filename
-            fileInfo += " (" + str(len(steps[-1][-1])) + " eps"
+        for filename in group:
+            data[-1].append([[] for i in range(numCols)])
             if stepCol >= 0:
-                fileInfo += ", " + str(steps[-1][-1][-1]) + " frames"
-            fileInfo += ")"
-            print(fileInfo)
+                steps[-1].append([])
+                curStep = 0
 
-            fin.close()
+            try:
+                fin = open(filename, 'r')
 
-        except Exception as inst:
-            sys.stderr.write("Error reading " + filename + "\n")
-            sys.stderr.write(str(inst) + "\n")
+                # Figure out the units for different columns
+                # (Silly to do this for every file but...here we are)
+                if args.ignoreheadings: # We'll use the column headings from the file
+                    allHeadings = fin.readline().split();
+                    for c in range(numCols):
+                        column = args.column[c] - 1
+                        if column < len(allHeadings):
+                            allUnits[c] = allHeadings[column]
+                            if len(args.denoms) > c and args.denoms[c] != 0:
+                                allUnits[c] += "/" + allHeadings[args.denoms[c]-1]
 
-        fileIdx += 1
+                #Read from the file
+                line = fin.readline()
+                while line != '':
+                    splitLine = line.split()
+                    for c in range(numCols):
+                        if args.column[c] - 1 < len(splitLine):
+                            denom = 1
+                            if len(args.denoms) > c and args.denoms[c] != 0:
+                                denomCol = args.denoms[c] - 1
+                                denom = float(splitLine[denomCol])
+                            if denom == 0:
+                                score = 0
+                            else:
+                                score = float(splitLine[args.column[c]-1])/denom
+                            data[-1][-1][c].append(score)
+                    if stepCol >= 0:
+                        step = int(splitLine[stepCol])
+                        curStep += step
+                        steps[-1][-1].append(curStep)
+                    line = fin.readline()
+
+                    skip = 0
+                    while skip < args.skiprows and line != '':
+                        nextLine = fin.readline()
+                        if nextLine != '':
+                            if stepCol > 0:
+                                curStep += int(line.split()[stepCol])
+                            line = nextLine
+                        skip += 1
+
+                fileInfo = str(fileIdx) + ": " + filename
+                fileInfo += " (" + str(len(steps[-1][-1])) + " eps"
+                if stepCol >= 0:
+                    fileInfo += ", " + str(steps[-1][-1][-1]) + " frames"
+                fileInfo += ")"
+                print(fileInfo)
+
+                fin.close()
+
+            except Exception as inst:
+                sys.stderr.write("Error reading " + filename + "\n")
+                sys.stderr.write(str(inst) + "\n")
+
+            fileIdx += 1
     print('---')
 
 #Plot the curves
