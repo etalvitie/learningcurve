@@ -311,7 +311,6 @@ legend = fig.legend(handles, labels, loc='outside right upper')
 
 figWidth = min(4*(numPlotCols + 0.5), 16)
 figHeight = min(3*numPlotRows, 8)
-print(figWidth, figHeight)
 fig.set_size_inches((figWidth, figHeight))
 
 #Resize things to fit
