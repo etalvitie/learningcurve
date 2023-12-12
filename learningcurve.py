@@ -56,7 +56,7 @@ else:
     numPlotRows = 1
     numPlotCols = 1
 
-fig, axes = plot.subplots(nrows=numPlotRows, ncols=numPlotCols, squeeze=False)
+fig, axes = plot.subplots(nrows=numPlotRows, ncols=numPlotCols, squeeze=False, layout='constrained')
 
 fileGroups = []
 for f in args.files: # First the individual files
@@ -306,16 +306,17 @@ for c in range(numCols):
 
 #Place the legend. Try to keep it from overlapping...
 handles, labels = axes[0][0].get_legend_handles_labels()
-legend = fig.legend(handles, labels, loc='upper right')
-bbox = legend.get_window_extent(fig.canvas.get_renderer()).transformed(fig.transFigure.inverted())
+legend = fig.legend(handles, labels, loc='outside right upper')
+#bbox = legend.get_window_extent(fig.canvas.get_renderer()).transformed(fig.transFigure.inverted())
 
-figWidth = min(4*numPlotCols, 16)
+figWidth = min(4*(numPlotCols + 0.5), 16)
 figHeight = min(3*numPlotRows, 8)
-
+print(figWidth, figHeight)
 fig.set_size_inches((figWidth, figHeight))
 
 #Resize things to fit
-fig.set_tight_layout({"rect":(0, 0, (bbox.x0+bbox.x1)/2, 1), "h_pad":0.3, "w_pad":0.3})
+#fig.set_tight_layout({"rect":(0, 0, (bbox.x0+bbox.x1)/2, 1), "h_pad":0.3, "w_pad":0.3})
+#plot.tight_layout()
 
 if args.filename:
     plot.savefig(args.filename)
