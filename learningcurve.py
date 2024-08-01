@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plot
+import matplotlib.colors
 import sys
 import argparse
 import math
@@ -28,6 +29,7 @@ parser.add_argument('-t', '--timesteps', metavar='COLUMN', type=int, default=0, 
 parser.add_argument('-d', '--denoms', type=int, default=[], nargs='+', help='Values in data column will be divided by values in this column. Multiple values will be matched with corresponding data columns (give 0 to indicate no denominator).')
 parser.add_argument('-a', '--avg', action='append', type=str, nargs='*', metavar='FILE', help='The provided files will be averaged together. This option can be used multiple times to create multiple groups to be averaged together.')
 parser.add_argument('-g', '--groupnames', type=str, default=[], nargs='+', action="extend", metavar='NAME', help='Labels the lines with the given names (if not enough are given, default names are assigned).')
+parser.add_argument('-r', '--colors', type=str, default=[], nargs='+', action='extend', metavar='COLOR_NAME', help='Assigns the given colors to the lines (if not enough are given, default colors are assigned).')
 parser.add_argument('-e', '--error', action='store_true', default=False, help='display standard error of averages')
 parser.add_argument('-s', '--smooth', type=int, default=1, help='the size of the smoothing window (default: %(default)s, which is no smoothing).')
 parser.add_argument('-l', '--title', metavar='TITLE', type=str, default=[], nargs='+', help='The titles to display for the subplots (default title is blank).')
@@ -209,7 +211,7 @@ for c in range(numCols):
             ylim = [args.ylim[limIndices[0]], args.ylim[limIndices[1]]]
 
     # Automate color selection for curves
-    axes[axesR][axesC].set_prop_cycle('color', [plot.cm.turbo(i) for i in np.linspace(0.1, 0.9, len(fileGroups))])
+    axes[axesR][axesC].set_prop_cycle('color', [plot.cm.turbo(i) for i in np.linspace(0.1, 0.9, len(fileGroups) - len(args.colors))])
 
     fileIdx = 0
     for g in range(len(data)):
@@ -269,7 +271,11 @@ for c in range(numCols):
             remainingIndices = [i for i in range(len(indices)) if indices[i] < len(smoothed[i])]
         totalChanges.append(len(combinedXCoords))
 
-        color = next(axes[axesR][axesC]._get_lines.prop_cycler)['color']
+        if g < len(args.colors):
+            color = matplotlib.colors.to_rgb(args.colors[g])            
+        else:
+            color = next(axes[axesR][axesC]._get_lines.prop_cycler)['color']
+            
         for t in range(len(totalChanges) - 1):
             startIdx = totalChanges[t]
             endIdx = totalChanges[t+1]
