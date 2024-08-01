@@ -211,7 +211,8 @@ for c in range(numCols):
             ylim = [args.ylim[limIndices[0]], args.ylim[limIndices[1]]]
 
     # Automate color selection for curves
-    axes[axesR][axesC].set_prop_cycle('color', [plot.cm.turbo(i) for i in np.linspace(0.1, 0.9, len(fileGroups) - len(args.colors))])
+    if len(args.colors) < len(fileGroups):
+        axes[axesR][axesC].set_prop_cycle('color', [plot.cm.turbo(i) for i in np.linspace(0.1, 0.9, len(fileGroups) - len(args.colors))])
 
     fileIdx = 0
     for g in range(len(data)):
